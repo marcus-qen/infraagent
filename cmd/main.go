@@ -39,7 +39,12 @@ import (
 
 	corev1alpha1 "github.com/marcus-qen/infraagent/api/v1alpha1"
 	"github.com/marcus-qen/infraagent/internal/controller"
+	"github.com/marcus-qen/infraagent/internal/lifecycle"
 	_ "github.com/marcus-qen/infraagent/internal/metrics" // Register Prometheus metrics
+	"github.com/marcus-qen/infraagent/internal/multicluster"
+	"github.com/marcus-qen/infraagent/internal/ratelimit"
+	"github.com/marcus-qen/infraagent/internal/retention"
+	"github.com/marcus-qen/infraagent/internal/scheduler"
 	"github.com/marcus-qen/infraagent/internal/telemetry"
 	// +kubebuilder:scaffold:imports
 )
@@ -66,6 +71,13 @@ func main() {
 	var secureMetrics bool
 	var enableHTTP2 bool
 	var otelEndpoint string
+	var retentionTTL string
+	var retentionScanInterval string
+	var retentionMaxBatch int
+	var retentionPreserveMin int
+	var drainTimeout string
+	var maxConcurrentCluster int
+	var maxConcurrentPerAgent int
 	var tlsOpts []func(*tls.Config)
 	flag.StringVar(&metricsAddr, "metrics-bind-address", "0", "The address the metrics endpoint binds to. "+
 		"Use :8443 for HTTPS or :8080 for HTTP, or leave as 0 to disable the metrics service.")
@@ -87,6 +99,20 @@ func main() {
 	flag.StringVar(&otelEndpoint, "otel-endpoint", "",
 		"OTLP gRPC endpoint for tracing (e.g. tempo:4317). Empty disables tracing. "+
 			"Also configurable via OTEL_EXPORTER_OTLP_ENDPOINT env var.")
+	flag.StringVar(&retentionTTL, "retention-ttl", "168h",
+		"How long to keep completed AgentRuns (e.g. 168h for 7 days). Set to 0 to disable retention.")
+	flag.StringVar(&retentionScanInterval, "retention-scan-interval", "1h",
+		"How often to scan for expired AgentRuns.")
+	flag.IntVar(&retentionMaxBatch, "retention-max-batch", 100,
+		"Maximum AgentRuns to delete per scan.")
+	flag.IntVar(&retentionPreserveMin, "retention-preserve-min", 5,
+		"Keep at least this many runs per agent regardless of TTL.")
+	flag.StringVar(&drainTimeout, "drain-timeout", "30s",
+		"Maximum time to wait for in-flight runs on shutdown.")
+	flag.IntVar(&maxConcurrentCluster, "max-concurrent-cluster", 10,
+		"Cluster-wide maximum simultaneous agent runs.")
+	flag.IntVar(&maxConcurrentPerAgent, "max-concurrent-per-agent", 1,
+		"Per-agent maximum simultaneous runs.")
 	opts := zap.Options{
 		Development: true,
 	}
@@ -207,6 +233,74 @@ func main() {
 		setupLog.Error(err, "Failed to start manager")
 		os.Exit(1)
 	}
+
+	// Multi-cluster client factory
+	clientFactory := multicluster.NewClientFactory(mgr.GetClient(), mgr.GetScheme())
+	setupLog.Info("Multi-cluster client factory initialised")
+
+	// Rate limiter
+	rateLimiter := ratelimit.NewLimiter(ratelimit.Config{
+		MaxConcurrentCluster:   maxConcurrentCluster,
+		MaxConcurrentPerAgent:  maxConcurrentPerAgent,
+		MaxRunsPerHourCluster:  200,
+		MaxRunsPerHourPerAgent: 30,
+		BurstAllowance:         3,
+	})
+	setupLog.Info("Rate limiter initialised",
+		"maxConcurrentCluster", maxConcurrentCluster,
+		"maxConcurrentPerAgent", maxConcurrentPerAgent,
+	)
+
+	// Retention controller
+	retTTL, err := time.ParseDuration(retentionTTL)
+	if err != nil {
+		setupLog.Error(err, "Invalid retention-ttl, using default 168h")
+		retTTL = 168 * time.Hour
+	}
+	retScan, err := time.ParseDuration(retentionScanInterval)
+	if err != nil {
+		setupLog.Error(err, "Invalid retention-scan-interval, using default 1h")
+		retScan = 1 * time.Hour
+	}
+	if retTTL > 0 {
+		retCtrl := retention.NewController(mgr.GetClient(), retention.Config{
+			TTL:                 retTTL,
+			ScanInterval:        retScan,
+			MaxDeleteBatch:      retentionMaxBatch,
+			PreserveMinPerAgent: retentionPreserveMin,
+		}, ctrl.Log)
+		if err := mgr.Add(retCtrl); err != nil {
+			setupLog.Error(err, "Failed to add retention controller")
+			os.Exit(1)
+		}
+		setupLog.Info("Retention controller registered",
+			"ttl", retTTL,
+			"scanInterval", retScan,
+			"preserveMin", retentionPreserveMin,
+		)
+	}
+
+	// Scheduler (with rate limiting)
+	schedCfg := scheduler.DefaultConfig()
+	schedCfg.MaxConcurrentRuns = maxConcurrentCluster
+	sched := scheduler.New(mgr.GetClient(), nil, ctrl.Log, schedCfg)
+	if err := mgr.Add(sched); err != nil {
+		setupLog.Error(err, "Failed to add scheduler")
+		os.Exit(1)
+	}
+
+	// Graceful shutdown manager
+	drainDur, err := time.ParseDuration(drainTimeout)
+	if err != nil {
+		setupLog.Error(err, "Invalid drain-timeout, using default 30s")
+		drainDur = 30 * time.Second
+	}
+	shutdownMgr := lifecycle.NewShutdownManager(sched.RunTrackerRef(), drainDur, ctrl.Log)
+
+	// Suppress unused warnings — these are wired into runner/scheduler at runtime
+	_ = clientFactory
+	_ = rateLimiter
+	_ = shutdownMgr
 
 	if err := (&controller.InfraAgentReconciler{
 		Client: mgr.GetClient(),

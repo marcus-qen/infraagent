@@ -39,6 +39,7 @@ import (
 	"github.com/marcus-qen/infraagent/internal/engine"
 	"github.com/marcus-qen/infraagent/internal/metrics"
 	"github.com/marcus-qen/infraagent/internal/provider"
+	"github.com/marcus-qen/infraagent/internal/security"
 	"github.com/marcus-qen/infraagent/internal/telemetry"
 	"github.com/marcus-qen/infraagent/internal/tools"
 )
@@ -311,7 +312,7 @@ func (r *Runner) conversationLoop(
 				toolResult, err := cfg.ToolRegistry.Execute(ctx, tc.Name, tc.Args)
 				if err != nil {
 					record.Status = corev1alpha1.ActionStatusFailed
-					record.Result = fmt.Sprintf("execution error: %v", err)
+					record.Result = security.SanitizeActionResult(fmt.Sprintf("execution error: %v", err), 4096)
 
 					toolResults = append(toolResults, provider.ToolResult{
 						ToolCallID: tc.ID,
@@ -322,12 +323,8 @@ func (r *Runner) conversationLoop(
 					telemetry.EndToolCallSpan(toolSpan, string(corev1alpha1.ActionStatusFailed), false, "")
 				} else {
 					record.Status = corev1alpha1.ActionStatusExecuted
-					// Truncate result for audit trail (keep full result for LLM)
-					if len(toolResult) > 4096 {
-						record.Result = toolResult[:4096] + "... (truncated)"
-					} else {
-						record.Result = toolResult
-					}
+					// Sanitize + truncate for audit trail (keep full unsanitized for LLM)
+					record.Result = security.SanitizeActionResult(toolResult, 4096)
 
 					toolResults = append(toolResults, provider.ToolResult{
 						ToolCallID: tc.ID,

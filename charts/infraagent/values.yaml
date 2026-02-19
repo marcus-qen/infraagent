@@ -62,6 +62,64 @@ grafana:
 # Logging
 logLevel: info
 
+# Retention — automatic AgentRun cleanup
+retention:
+  enabled: true
+  # How long to keep completed AgentRuns
+  ttl: 168h  # 7 days
+  # How often to scan for expired runs
+  scanInterval: 1h
+  # Max runs to delete per scan
+  maxDeleteBatch: 100
+  # Keep at least this many runs per agent regardless of TTL
+  preserveMinPerAgent: 5
+
+# Rate limiting
+rateLimit:
+  # Cluster-wide max simultaneous runs
+  maxConcurrentCluster: 10
+  # Per-agent max simultaneous runs
+  maxConcurrentPerAgent: 1
+  # Cluster-wide max runs per hour
+  maxRunsPerHourCluster: 200
+  # Per-agent max runs per hour
+  maxRunsPerHourPerAgent: 30
+  # Extra burst allowance for webhook triggers
+  burstAllowance: 3
+
+# Graceful shutdown
+shutdown:
+  # Max time to wait for in-flight runs to complete on SIGTERM
+  drainTimeout: 30s
+  # Pod terminationGracePeriodSeconds (should be > drainTimeout)
+  terminationGracePeriodSeconds: 45
+
+# Network policies
+networkPolicy:
+  enabled: false
+  # Allow metrics scraping from specific pods (e.g. Prometheus)
+  metricsFrom: []
+  # Webhook receiver port (if using webhook triggers)
+  # webhookPort: 9443
+  # Allow webhook triggers from specific sources
+  webhookFrom: []
+  # Additional egress rules
+  additionalEgress: []
+  # MCP server ports to allow egress to
+  mcpServerPorts: []
+
+# Per-agent ServiceAccounts and scoped RBAC.
+# Each agent gets a dedicated ServiceAccount with namespace-scoped
+# read permissions. Agents that need mutations require explicit Roles.
+agents: []
+# Example:
+#   - name: watchman-light
+#     namespace: infraagent  # defaults to Release.Namespace
+#     targetNamespaces:
+#       - backstage
+#       - monitoring
+#       - argocd
+
 # Node selector, tolerations, affinity
 nodeSelector: {}
 tolerations: []

@@ -23,6 +23,7 @@ import (
 
 	corev1alpha1 "github.com/marcus-qen/infraagent/api/v1alpha1"
 	"github.com/marcus-qen/infraagent/internal/metrics"
+	"github.com/marcus-qen/infraagent/internal/ratelimit"
 	"github.com/marcus-qen/infraagent/internal/runner"
 )
 
@@ -50,6 +51,9 @@ type Scheduler struct {
 	// jitterPercent is the jitter applied to scheduled times.
 	// Default: 10%.
 	jitterPercent float64
+
+	// RateLimiter enforces run frequency limits. Optional — if nil, no rate limiting.
+	RateLimiter *ratelimit.Limiter
 
 	// runConfigFactory builds RunConfig for an agent.
 	// Must be set before Start().
@@ -217,11 +221,29 @@ func (s *Scheduler) triggerRun(
 	agentKey string,
 	trigger corev1alpha1.RunTrigger,
 ) {
+	// Rate limit check (if limiter configured)
+	if s.RateLimiter != nil {
+		isWebhook := trigger == corev1alpha1.RunTriggerWebhook
+		decision := s.RateLimiter.Allow(agentKey, isWebhook)
+		if !decision.Allowed {
+			s.log.Info("Agent run rate-limited",
+				"agent", agent.Name,
+				"reason", decision.Reason,
+			)
+			return
+		}
+	}
+
 	runName := fmt.Sprintf("%s-run", agent.Name)
 
 	if !s.tracker.TryStart(agentKey, runName) {
 		s.log.Info("Agent already running, skipping", "agent", agent.Name)
 		return
+	}
+
+	// Record rate limiter start
+	if s.RateLimiter != nil {
+		s.RateLimiter.RecordStart(agentKey)
 	}
 
 	s.log.Info("Triggering agent run",
@@ -238,6 +260,9 @@ func (s *Scheduler) triggerRun(
 		if err != nil {
 			s.log.Error(err, "Failed to create run config", "agent", agent.Name)
 			s.tracker.Complete(agentKey)
+			if s.RateLimiter != nil {
+				s.RateLimiter.RecordComplete(agentKey)
+			}
 			return
 		}
 	}
@@ -246,6 +271,11 @@ func (s *Scheduler) triggerRun(
 	// Run in goroutine (non-blocking)
 	go func() {
 		defer s.tracker.Complete(agentKey)
+		defer func() {
+			if s.RateLimiter != nil {
+				s.RateLimiter.RecordComplete(agentKey)
+			}
+		}()
 
 		runCtx := context.Background() // Independent of scheduler tick context
 		agentRun, err := s.runner.Execute(runCtx, agent, cfg)

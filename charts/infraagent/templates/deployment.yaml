@@ -25,7 +25,7 @@ spec:
       serviceAccountName: {{ include "infraagent.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
-      terminationGracePeriodSeconds: 10
+      terminationGracePeriodSeconds: {{ .Values.shutdown.terminationGracePeriodSeconds | default 45 }}
       containers:
         - name: manager
           image: {{ include "infraagent.image" . }}
@@ -39,6 +39,17 @@ spec:
             {{- if and .Values.otel.enabled .Values.otel.endpoint }}
             - --otel-endpoint={{ .Values.otel.endpoint }}
             {{- end }}
+            {{- if .Values.retention.enabled }}
+            - --retention-ttl={{ .Values.retention.ttl }}
+            - --retention-scan-interval={{ .Values.retention.scanInterval }}
+            - --retention-max-batch={{ .Values.retention.maxDeleteBatch }}
+            - --retention-preserve-min={{ .Values.retention.preserveMinPerAgent }}
+            {{- else }}
+            - --retention-ttl=0
+            {{- end }}
+            - --drain-timeout={{ .Values.shutdown.drainTimeout }}
+            - --max-concurrent-cluster={{ .Values.rateLimit.maxConcurrentCluster }}
+            - --max-concurrent-per-agent={{ .Values.rateLimit.maxConcurrentPerAgent }}
           ports:
             - name: metrics
               containerPort: {{ .Values.metrics.port }}
