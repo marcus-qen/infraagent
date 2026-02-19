@@ -18,3 +18,24 @@ keywords:
   - agents
   - llm
   - observability
+annotations:
+  artifacthub.io/license: Apache-2.0
+  artifacthub.io/operator: "true"
+  artifacthub.io/operatorCapabilities: Seamless Upgrades
+  artifacthub.io/crds: |
+    - kind: InfraAgent
+      version: v1alpha1
+      name: infraagents.core.infraagent.io
+      description: Agent definition — identity, schedule, model, guardrails, skills
+    - kind: AgentEnvironment
+      version: v1alpha1
+      name: agentenvironments.core.infraagent.io
+      description: Site binding — endpoints, credentials, namespaces, channels
+    - kind: ModelTierConfig
+      version: v1alpha1
+      name: modeltierconfigs.core.infraagent.io
+      description: Maps tier names to provider/model with auth
+    - kind: AgentRun
+      version: v1alpha1
+      name: agentruns.core.infraagent.io
+      description: Immutable audit record of every agent execution
