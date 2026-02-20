@@ -122,7 +122,13 @@ func (r *InfraAgentReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 
 					// Create tool registry if factory is available
 					if r.ToolRegistryFactory != nil {
-						reg, err := r.ToolRegistryFactory(agent, nil)
+						// Resolve environment for credential-aware HTTP tools
+						var resolvedEnv *resolver.ResolvedEnvironment
+						if agent.Spec.EnvironmentRef != "" {
+							envResolver := resolver.NewEnvironmentResolver(r.Client, agent.Namespace)
+							resolvedEnv, _ = envResolver.Resolve(runCtx, agent.Spec.EnvironmentRef)
+						}
+						reg, err := r.ToolRegistryFactory(agent, resolvedEnv)
 						if err != nil {
 							runLog.Error(err, "Failed to create tool registry")
 							return
