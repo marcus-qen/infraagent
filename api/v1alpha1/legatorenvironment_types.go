@@ -47,6 +47,53 @@ type KubeconfigRef struct {
 	Key string `json:"key,omitempty"`
 }
 
+// --- Connectivity types ---
+
+// ConnectivitySpec defines how the agent reaches non-Kubernetes targets
+// (servers, databases, network devices) across network boundaries.
+type ConnectivitySpec struct {
+	// type specifies the connectivity method.
+	// +required
+	// +kubebuilder:validation:Enum="direct";"headscale";"tailscale"
+	Type string `json:"type"`
+
+	// headscale configures Headscale/Tailscale mesh VPN connectivity.
+	// Required when type is "headscale" or "tailscale".
+	// +optional
+	Headscale *HeadscaleConnectivity `json:"headscale,omitempty"`
+}
+
+// HeadscaleConnectivity configures mesh VPN network access via Headscale or Tailscale.
+type HeadscaleConnectivity struct {
+	// controlServer is the Headscale server URL (e.g. "https://headscale.example.com").
+	// For Tailscale, use "https://controlplane.tailscale.com".
+	// +required
+	ControlServer string `json:"controlServer"`
+
+	// authKeySecretRef references a Secret containing the pre-authentication key.
+	// The Secret must have a "key" data field with the Headscale/Tailscale auth key.
+	// +required
+	AuthKeySecretRef string `json:"authKeySecretRef"`
+
+	// tags are the ACL tags to assign to this agent's node (e.g. ["tag:agent-runtime"]).
+	// Used for Headscale/Tailscale ACL policy.
+	// +optional
+	Tags []string `json:"tags,omitempty"`
+
+	// hostname is the Tailscale hostname for this agent (defaults to agent name).
+	// +optional
+	Hostname string `json:"hostname,omitempty"`
+
+	// acceptRoutes enables accepting advertised routes from subnet routers.
+	// +optional
+	// +kubebuilder:default=true
+	AcceptRoutes bool `json:"acceptRoutes,omitempty"`
+
+	// exitNode specifies an exit node to route all traffic through (optional).
+	// +optional
+	ExitNode string `json:"exitNode,omitempty"`
+}
+
 // --- Endpoint types ---
 
 // EndpointSpec defines a named endpoint the agent can use.
@@ -246,6 +293,11 @@ type LegatorEnvironmentSpec struct {
 	// connection defines how the agent connects to its target cluster.
 	// +optional
 	Connection *ConnectionSpec `json:"connection,omitempty"`
+
+	// connectivity configures how the agent reaches non-Kubernetes targets
+	// (servers, databases, network devices) across network boundaries.
+	// +optional
+	Connectivity *ConnectivitySpec `json:"connectivity,omitempty"`
 
 	// vault configures HashiCorp Vault for dynamic credential management.
 	// When set, credentials with vault-* types use this Vault server.

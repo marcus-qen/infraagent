@@ -74,6 +74,62 @@ spec:
             {{- toYaml .Values.securityContext | nindent 12 }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
+          {{- if .Values.connectivity.enabled }}
+          volumeMounts:
+            - name: tailscale-state
+              mountPath: /var/run/tailscale
+              readOnly: true
+          {{- end }}
+        {{- if .Values.connectivity.enabled }}
+        - name: tailscale
+          image: {{ .Values.connectivity.image | default "ghcr.io/tailscale/tailscale:latest" }}
+          imagePullPolicy: {{ .Values.connectivity.imagePullPolicy | default "IfNotPresent" }}
+          env:
+            - name: TS_AUTHKEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.connectivity.authKeySecret }}
+                  key: {{ .Values.connectivity.authKeySecretKey | default "key" }}
+            {{- if .Values.connectivity.controlServer }}
+            - name: TS_LOGIN_SERVER
+              value: {{ .Values.connectivity.controlServer | quote }}
+            {{- end }}
+            - name: TS_STATE_DIR
+              value: /var/lib/tailscale
+            - name: TS_USERSPACE
+              value: "true"
+            - name: TS_SOCKET
+              value: /var/run/tailscale/tailscaled.sock
+            {{- if .Values.connectivity.hostname }}
+            - name: TS_HOSTNAME
+              value: {{ .Values.connectivity.hostname | quote }}
+            {{- end }}
+            {{- if .Values.connectivity.acceptRoutes }}
+            - name: TS_ACCEPT_ROUTES
+              value: "true"
+            {{- end }}
+            {{- range $key, $value := .Values.connectivity.extraEnv }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+          resources:
+            {{- toYaml (.Values.connectivity.resources | default (dict "requests" (dict "cpu" "50m" "memory" "64Mi") "limits" (dict "cpu" "200m" "memory" "128Mi"))) | nindent 12 }}
+          volumeMounts:
+            - name: tailscale-state
+              mountPath: /var/run/tailscale
+            - name: tailscale-data
+              mountPath: /var/lib/tailscale
+        {{- end }}
+      {{- if .Values.connectivity.enabled }}
+      volumes:
+        - name: tailscale-state
+          emptyDir: {}
+        - name: tailscale-data
+          emptyDir: {}
+      {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

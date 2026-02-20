@@ -58,6 +58,7 @@ import (
 	"github.com/marcus-qen/legator/internal/scheduler"
 	"github.com/marcus-qen/legator/internal/telemetry"
 	"github.com/marcus-qen/legator/internal/tools"
+	connectivitypkg "github.com/marcus-qen/legator/internal/connectivity"
 	vaultpkg "github.com/marcus-qen/legator/internal/vault"
 	// +kubebuilder:scaffold:imports
 )
@@ -457,6 +458,15 @@ func main() {
 			envResolver := resolver.NewEnvironmentResolver(mgr.GetClient(), agent.Namespace)
 			resolvedEnv, _ = envResolver.Resolve(context.Background(), agent.Spec.EnvironmentRef)
 			// Non-fatal: tools work without creds, just can't auth
+		}
+
+		// Pre-run connectivity check
+		if resolvedEnv != nil && resolvedEnv.Connectivity != nil {
+			connMgr := connectivitypkg.NewManager(setupLog.WithName("connectivity"))
+			if err := connMgr.PreRunCheck(context.Background(), resolvedEnv.Connectivity, resolvedEnv.Endpoints); err != nil {
+				setupLog.Error(err, "connectivity pre-run check failed", "agent", agent.Name)
+				// Non-fatal: agent may still work with available endpoints
+			}
 		}
 
 		// Create Vault credential manager if environment has Vault config

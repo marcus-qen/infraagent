@@ -124,6 +124,36 @@ agents: []
 #       - monitoring
 #       - argocd
 
+# Connectivity — Headscale/Tailscale mesh VPN sidecar for reaching
+# non-Kubernetes targets (servers, databases, network devices).
+connectivity:
+  # Enable Tailscale/Headscale sidecar
+  enabled: false
+  # Tailscale container image
+  image: ghcr.io/tailscale/tailscale:latest
+  imagePullPolicy: IfNotPresent
+  # Headscale control server URL (omit for Tailscale SaaS)
+  # controlServer: "https://headscale.example.com"
+  controlServer: ""
+  # Secret containing the pre-auth key
+  authKeySecret: ""
+  # Key within the secret (default: "key")
+  authKeySecretKey: key
+  # Tailscale hostname for this agent (defaults to pod hostname)
+  hostname: ""
+  # Accept advertised routes from subnet routers
+  acceptRoutes: true
+  # Extra environment variables for the Tailscale container
+  extraEnv: {}
+  # Resource limits for the sidecar
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi
+
 # Node selector, tolerations, affinity
 nodeSelector: {}
 tolerations: []

@@ -49,6 +49,9 @@ type ResolvedEnvironment struct {
 	// MCPServers maps named MCP tool servers.
 	MCPServers map[string]corev1alpha1.MCPServerSpec
 
+	// Connectivity holds the network connectivity config (Headscale/Tailscale).
+	Connectivity *corev1alpha1.ConnectivitySpec
+
 	// VaultConfig holds the Vault server connection info (if configured).
 	VaultConfig *corev1alpha1.VaultConfig
 
@@ -112,6 +115,7 @@ func (r *EnvironmentResolver) Resolve(ctx context.Context, envName string) (*Res
 		Channels:       env.Spec.Channels,
 		DataResources:  env.Spec.DataResources,
 		MCPServers:     env.Spec.MCPServers,
+		Connectivity:   env.Spec.Connectivity,
 		VaultConfig:    env.Spec.Vault,
 		RawCredentials: env.Spec.Credentials,
 	}
