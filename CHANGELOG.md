@@ -2,6 +2,62 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v0.6.0] — 2026-02-20
+
+### Theme: Ecosystem & Integration
+
+v0.6.0 connects Legator to the wider world — real registries, real auth, real clouds, and agent-to-agent collaboration.
+
+### Added
+
+#### ORAS Registry Wire-up (Phase 1)
+- `RegistryClient`: push/pull skill artifacts to OCI-compliant registries via ORAS v2.6.0
+- Push creates proper OCI Image Manifest v1.1 with config + content layers
+- Pull extracts content layer, parses config metadata
+- Auth: static credentials or LEGATOR_REGISTRY_USERNAME/PASSWORD env vars
+- PlainHTTP mode for dev/test registries
+- CLI `legator skill push/pull` now works against real registries (ghcr.io, Harbor, etc.)
+
+#### OIDC + Keycloak Authentication (Phase 2)
+- Full OIDC middleware for dashboard: .well-known discovery, authorization code flow, session management
+- Login → Keycloak redirect → callback → session cookie → dashboard access
+- CSRF protection via random state parameter, 10-minute state expiry
+- 8-hour sessions, HttpOnly/SameSite cookies
+- /healthz bypass (for probes), /static bypass (for assets)
+- /auth/login, /auth/callback, /auth/logout routes
+- UserFromContext() for RBAC-aware handlers
+- **After deployment, your dashboard URL will redirect to Keycloak login**
+
+#### Agent-to-Agent (A2A) Protocol (Phase 3)
+- CRD-native task delegation: Agent A → TaskRequest → Agent B
+- Router: DelegateTask, GetPendingTasks (priority-sorted), CompleteTask, FailTask, RejectTask
+- Priority queue: critical > high > normal > low
+- Task lifecycle: pending → accepted → in-progress → completed/failed/rejected/expired
+- ExpireOldTasks: TTL-based cleanup of stale pending tasks
+- LLM tools: `a2a.delegate` (delegate to another agent), `a2a.check_tasks` (check inbox)
+- Uses existing AgentEvent CRDs — no new CRD needed
+
+#### Helm Chart Updates (Phase 4)
+- Multi-tenancy: team definitions with namespace + resource quotas
+- Notifications: Slack, Telegram, Email, Webhook config with secret refs
+- A2A: task routing config (namespace, TTL, scan interval)
+- Cloud tools: AWS (region, IRSA) and Azure (subscription, Workload Identity) config
+- Dashboard: /healthz health probes (OIDC-safe)
+
+#### AWS + Azure Example Agents (Phase 5)
+- 6 example agents: cost-monitor, security-audit, resource-inventory for each provider
+- 2 example environments: aws-production, azure-production (Vault + IRSA/Workload Identity)
+- All agents at 'observe' autonomy with detailed SKILL.md and report templates
+- 12 total agent examples across 4 domains (K8s, SSH, AWS, Azure)
+
+### Stats
+- 454 tests across 28 packages
+- 8 tool domains: kubectl, HTTP, SSH, SQL, DNS, state, AWS, Azure
+- 2 A2A tools: a2a.delegate, a2a.check_tasks
+- 12 example agents across 4 infrastructure domains
+
+---
+
 ## [v0.5.0] — 2026-02-20
 
 ### Theme: Production & Community Readiness

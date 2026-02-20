@@ -362,7 +362,7 @@ Deploy via Helm: `dashboard.enabled: true`. OIDC auth ready for Keycloak hookup.
 
 ## Production Status
 
-**v0.5.0** — Running on a 4-node Talos Kubernetes cluster. 10 autonomous agents managing platform operations as sole operator. Seven tool domains (kubectl, HTTP, SSH, SQL, DNS, AWS, Azure), Vault credential lifecycle, Headscale connectivity, approval workflows, inter-agent coordination, persistent agent state, notification channels (Slack/Telegram/email/webhook), OCI skill distribution, multi-tenant foundations. 423 tests across 27 packages.
+**v0.6.0** — Running on a 4-node Talos Kubernetes cluster. 10 autonomous agents managing platform operations as sole operator. Eight tool domains (kubectl, HTTP, SSH, SQL, DNS, state, AWS, Azure) plus A2A task delegation. OIDC authentication (Keycloak), real OCI registry push/pull (ORAS), multi-tenant quotas, notification channels, agent-to-agent collaboration. 454 tests across 28 packages.
 
 ### Dogfooding Fleet
 
