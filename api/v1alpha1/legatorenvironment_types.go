@@ -66,16 +66,66 @@ type EndpointSpec struct {
 
 // --- Credential types ---
 
-// CredentialRef references a Secret for tool authentication.
+// CredentialRef references a Secret or Vault path for tool authentication.
 type CredentialRef struct {
-	// secretRef is the name of the Secret.
-	// +required
-	SecretRef string `json:"secretRef"`
+	// secretRef is the name of the Secret. Used for static credentials.
+	// +optional
+	SecretRef string `json:"secretRef,omitempty"`
 
 	// type indicates the credential format.
 	// +required
-	// +kubebuilder:validation:Enum="bearer-token";"token";"api-key";"basic-auth";"tls"
+	// +kubebuilder:validation:Enum="bearer-token";"token";"api-key";"basic-auth";"tls";"vault-kv";"vault-ssh-ca";"vault-database"
 	Type string `json:"type"`
+
+	// vault contains Vault-specific credential configuration.
+	// Required when type is vault-kv, vault-ssh-ca, or vault-database.
+	// +optional
+	Vault *VaultCredentialSpec `json:"vault,omitempty"`
+}
+
+// VaultCredentialSpec configures dynamic credential retrieval from Vault.
+type VaultCredentialSpec struct {
+	// mount is the Vault secrets engine mount path (e.g. "secret", "ssh-client-signer", "database").
+	// +required
+	Mount string `json:"mount"`
+
+	// role is the Vault role to use (for SSH CA and database).
+	// +optional
+	Role string `json:"role,omitempty"`
+
+	// path is the secret path within the mount (for KV).
+	// +optional
+	Path string `json:"path,omitempty"`
+
+	// ttl is the requested credential TTL (e.g. "5m" for SSH certs).
+	// +optional
+	// +kubebuilder:default="5m"
+	TTL string `json:"ttl,omitempty"`
+}
+
+// VaultConfig defines the Vault server connection for an environment.
+type VaultConfig struct {
+	// address is the Vault server URL.
+	// +required
+	Address string `json:"address"`
+
+	// authMethod is how the controller authenticates to Vault.
+	// +required
+	// +kubebuilder:validation:Enum="kubernetes";"token"
+	AuthMethod string `json:"authMethod"`
+
+	// k8sAuthRole is the Vault K8s auth role (required when authMethod is "kubernetes").
+	// +optional
+	K8sAuthRole string `json:"k8sAuthRole,omitempty"`
+
+	// k8sAuthPath is the Vault K8s auth mount path (default "kubernetes").
+	// +optional
+	// +kubebuilder:default="kubernetes"
+	K8sAuthPath string `json:"k8sAuthPath,omitempty"`
+
+	// tokenSecretRef references a Secret containing a Vault token (required when authMethod is "token").
+	// +optional
+	TokenSecretRef string `json:"tokenSecretRef,omitempty"`
 }
 
 // --- Channel types ---
@@ -196,6 +246,11 @@ type LegatorEnvironmentSpec struct {
 	// connection defines how the agent connects to its target cluster.
 	// +optional
 	Connection *ConnectionSpec `json:"connection,omitempty"`
+
+	// vault configures HashiCorp Vault for dynamic credential management.
+	// When set, credentials with vault-* types use this Vault server.
+	// +optional
+	Vault *VaultConfig `json:"vault,omitempty"`
 
 	// endpoints maps named endpoints to their URLs and health paths.
 	// +optional
