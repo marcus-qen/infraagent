@@ -102,6 +102,10 @@ func main() {
 			reason = strings.Join(os.Args[3:], " ")
 		}
 		handleApprovalDecision(os.Args[2], "Denied", reason)
+	case "init":
+		handleInit(os.Args[2:])
+	case "validate":
+		handleValidate(os.Args[2:])
 	case "status":
 		handleStatus()
 	case "version":
@@ -126,6 +130,8 @@ Usage:
   legator approvals               List pending approvals
   legator approve <name> [reason] Approve an action
   legator deny <name> [reason]    Deny an action
+  legator init [directory]        Create a new agent (interactive wizard)
+  legator validate <directory>    Validate an agent directory
   legator status                  Cluster-wide summary
   legator version                 Show version info
 

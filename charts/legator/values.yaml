@@ -208,3 +208,9 @@ dashboard:
     limits:
       cpu: 200m
       memory: 128Mi
+
+# --- Starter Skills ---
+# Bundled skill ConfigMaps for common use cases.
+# Installed as ConfigMaps with legator.io/skill label.
+starterSkills:
+  enabled: true
