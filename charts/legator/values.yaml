@@ -209,6 +209,101 @@ dashboard:
       cpu: 200m
       memory: 128Mi
 
+# --- Multi-Tenancy ---
+tenancy:
+  enabled: false
+  # Team definitions with resource quotas.
+  teams: []
+  # Example:
+  #   - name: platform
+  #     namespace: legator-platform
+  #     quotas:
+  #       maxAgents: 20
+  #       maxConcurrentRuns: 5
+  #       maxRunsPerDay: 500
+  #       maxTokenBudgetPerHour: 1000000
+  #   - name: data
+  #     namespace: legator-data
+  #     quotas:
+  #       maxAgents: 10
+  #       maxConcurrentRuns: 3
+  #       maxRunsPerDay: 200
+  #       maxTokenBudgetPerHour: 500000
+
+# --- Notifications ---
+notifications:
+  enabled: false
+  # Rate limit per agent per hour (0 = unlimited)
+  rateLimitPerHour: 100
+  # Slack webhook notifications
+  slack:
+    webhookURL: ""
+    # Reference to existing secret for webhook URL
+    webhookURLSecretRef: {}
+    #   name: legator-slack
+    #   key: webhook-url
+  # Telegram Bot API notifications
+  telegram:
+    botToken: ""
+    chatID: ""
+    botTokenSecretRef: {}
+    #   name: legator-telegram
+    #   key: bot-token
+  # Email (SMTP) notifications
+  email:
+    host: ""
+    port: 587
+    username: ""
+    from: ""
+    to: []
+    passwordSecretRef: {}
+    #   name: legator-email
+    #   key: password
+  # Generic webhook notifications
+  webhook:
+    url: ""
+    headers: {}
+
+# --- Agent-to-Agent (A2A) ---
+a2a:
+  enabled: false
+  # Namespace for A2A task events (defaults to agent namespace)
+  namespace: ""
+  # How long before stale pending tasks are expired
+  taskTTL: 24h
+  # How often to scan for expired tasks
+  scanInterval: 1h
+
+# --- Cloud Tool Configuration ---
+cloudTools:
+  # AWS CLI tool
+  aws:
+    enabled: false
+    region: ""
+    # Secret containing AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY
+    credentialSecretRef: {}
+    #   name: legator-aws-credentials
+    #   accessKeyIDKey: AWS_ACCESS_KEY_ID
+    #   secretAccessKeyKey: AWS_SECRET_ACCESS_KEY
+    # Use IRSA (IAM Roles for Service Accounts) instead of static creds
+    irsa:
+      enabled: false
+      roleArn: ""
+  # Azure CLI tool
+  azure:
+    enabled: false
+    subscription: ""
+    # Secret containing Azure SP credentials
+    credentialSecretRef: {}
+    #   name: legator-azure-credentials
+    #   clientIDKey: AZURE_CLIENT_ID
+    #   clientSecretKey: AZURE_CLIENT_SECRET
+    #   tenantIDKey: AZURE_TENANT_ID
+    # Use Workload Identity instead of static creds
+    workloadIdentity:
+      enabled: false
+      clientId: ""
+
 # --- Starter Skills ---
 # Bundled skill ConfigMaps for common use cases.
 # Installed as ConfigMaps with legator.io/skill label.
