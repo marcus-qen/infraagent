@@ -287,6 +287,41 @@ forge           Ready  observe   */5 * * * *  16    1s ago
 herald          Ready  observe   0 8 * * *    1     1h ago
 ...
 
+$ legator init
+🚀 Legator Agent Init
+=====================
+  Agent name [my-agent]: cert-monitor
+  Description [Autonomous agent...]: Monitor TLS certificate expiry
+  Namespace [agents]: agents
+  Autonomy level [observe]: observe
+  Schedule (cron) [0 * * * *]: 0 8 * * *
+  Model tier [standard]: fast
+  Primary tool domain [kubernetes]: kubernetes
+  Starter skill [cluster-health]: certificate-expiry
+
+Creating agent in ./cert-monitor ...
+  📄 cert-monitor/agent.yaml
+  📄 cert-monitor/environment.yaml
+  📄 cert-monitor/skill/SKILL.md
+  📄 cert-monitor/skill/actions.yaml
+
+✅ Agent scaffold created!
+
+$ legator validate cert-monitor/
+🔍 Validating agent in cert-monitor/ ...
+
+  ✅ agent.yaml is valid YAML
+  ✅ agent name: cert-monitor
+  ✅ autonomy: observe
+  ✅ schedule: 0 8 * * *
+  ✅ 3 tool(s) allowed
+  ✅ skill source: configmap://cert-monitor-skill
+  ✅ environment.yaml is valid YAML
+  ✅ skill/SKILL.md (612 bytes)
+  ✅ skill/actions.yaml: 3 action(s) defined
+
+✅ Validation passed — agent is ready to deploy
+
 $ legator runs logs forge-ckmpm
 Run: forge-ckmpm
 Agent: forge | Phase: Succeeded | Trigger: scheduled
@@ -314,9 +349,20 @@ Actions (9):
 | [multi-cluster](examples/agents/multi-cluster-watchman.yaml) | Monitor a remote cluster |
 | [All agents](examples/agents/) | Full ops team + SSH + SQL examples |
 
+## Web Dashboard
+
+Legator ships with a web dashboard for observability:
+
+- **Agent overview** — status, autonomy level, schedule, last run
+- **Run history** — success/failure, token usage, duration, full audit trail
+- **Approval queue** — pending approval requests, approve/deny from CLI or dashboard
+- **Event feed** — inter-agent events, severity, consumer tracking
+
+Deploy via Helm: `dashboard.enabled: true`. OIDC auth ready for Keycloak hookup.
+
 ## Production Status
 
-**v0.3.0** — Running on a 4-node Talos Kubernetes cluster. 10 autonomous agents managing platform operations. Three tool domains (kubectl, SSH, SQL), Vault credential lifecycle, Headscale network connectivity.
+**v0.4.0** — Running on a 4-node Talos Kubernetes cluster. 10 autonomous agents managing platform operations as sole operator (OpenClaw crons disabled). Five tool domains (kubectl, HTTP, SSH, SQL, DNS), Vault credential lifecycle, Headscale network connectivity, approval workflows, inter-agent coordination.
 
 ### Dogfooding Fleet
 

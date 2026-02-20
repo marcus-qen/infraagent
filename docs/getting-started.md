@@ -48,7 +48,7 @@ Apply a ModelTierConfig that maps tier names to providers:
 
 ```yaml
 # model-tier-config.yaml
-apiVersion: core.legator.io/v1alpha1
+apiVersion: legator.io/v1alpha1
 kind: ModelTierConfig
 metadata:
   name: default
@@ -82,7 +82,7 @@ The LegatorEnvironment tells agents about your cluster — what endpoints exist,
 
 ```yaml
 # environment.yaml
-apiVersion: core.legator.io/v1alpha1
+apiVersion: legator.io/v1alpha1
 kind: LegatorEnvironment
 metadata:
   name: my-cluster
@@ -117,7 +117,7 @@ Here's a simple monitoring agent that checks endpoint health every 5 minutes:
 
 ```yaml
 # watchman.yaml
-apiVersion: core.legator.io/v1alpha1
+apiVersion: legator.io/v1alpha1
 kind: LegatorAgent
 metadata:
   name: watchman
@@ -198,6 +198,49 @@ kubectl describe agentrun watchman-abc123 -n agents
 - [Data Protection](data-protection.md) — how data resources are protected
 - [Troubleshooting](troubleshooting.md) — common issues and solutions
 
+## Create Agents with the CLI
+
+The fastest way to start:
+
+```bash
+# Interactive wizard
+legator init
+
+# Validate before deploying
+legator validate my-agent/
+
+# Deploy
+kubectl apply -f my-agent/agent.yaml -n agents
+kubectl apply -f my-agent/environment.yaml -n agents
+kubectl create configmap my-agent-skill \
+  --from-file=my-agent/skill/ -n agents
+
+# Watch
+legator runs list --agent my-agent
+```
+
+## Approval Workflows
+
+For mutation agents, enable approval mode:
+
+```yaml
+spec:
+  guardrails:
+    autonomy: automate-safe
+    approvalMode: mutation-gate  # or plan-first, every-action
+    approvalTimeout: 30m
+```
+
+When the agent needs to mutate:
+```bash
+$ legator approvals
+STATUS      NAME                AGENT  TOOL         TIER              AGE
+⏳ Pending  forge-restart-abc   forge  kubectl.rollout  service-mutation  30s
+
+$ legator approve forge-restart-abc "deployment stuck"
+✅ Approved: forge → kubectl.rollout backstage/backstage-dev (deployment stuck)
+```
+
 ## Beyond Kubernetes
 
 Legator agents manage more than clusters. With v0.3.0:
@@ -206,4 +249,13 @@ Legator agents manage more than clusters. With v0.3.0:
 - **SQL Tool** — query databases via `sql.query` with dynamic Vault credentials
 - **Headscale** — reach targets across networks via WireGuard mesh VPN
 
-See the [examples/](../examples/) directory for SSH, SQL, and Headscale agent configurations.
+See the [examples/](../examples/) directory for SSH, SQL, DNS, and Headscale agent configurations.
+
+## v0.4.0 Features
+
+- **Web Dashboard** — agent status, run history, approval queue, event feed
+- **Approval Workflow** — CRD-based approval with CLI approve/deny
+- **Agent Coordination** — event bus for trigger-on-finding patterns
+- **DNS Tool** — `dns.query` and `dns.reverse` for DNS monitoring
+- **`legator init`** — interactive wizard with 5 starter skill templates
+- **`legator validate`** — pre-deploy checks with actionable feedback

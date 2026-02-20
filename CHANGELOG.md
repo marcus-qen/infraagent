@@ -2,6 +2,85 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v0.4.0] — 2026-02-20
+
+### Theme: Observability & Adoption Readiness
+
+v0.4.0 transforms Legator from a CLI-only operator tool into a full platform with
+web dashboard, approval workflows, inter-agent coordination, DNS tooling, and
+developer-friendly onboarding.
+
+### Added
+
+#### Web Dashboard (Phase 1)
+- Go HTTP server with 8 page routes + 3 htmx live-refresh endpoints
+- Dark theme CSS, embedded templates via `//go:embed`
+- Pages: agent list, agent detail, runs list, run detail, approvals, events
+- Per-page template cloning pattern (avoids Go `{{define "content"}}` collision)
+- Separate deployment binary (`cmd/dashboard/main.go`) with signal handling
+- Helm chart templates: `dashboard-deployment.yaml`, `dashboard-service.yaml`, `dashboard-rbac.yaml`
+- Dashboard ClusterRole: read all Legator CRDs + update ApprovalRequest status
+- OIDC flag plumbing (auth enforcement deferred to Keycloak hookup)
+- 9 dashboard tests
+
+#### Approval Workflow (Phase 2)
+- **New CRD: `ApprovalRequest`** — Pending/Approved/Denied/Expired lifecycle
+  - Proposed action details (tool, arguments, tier)
+  - Configurable timeout (default 30m)
+  - Decision tracking (decidedBy, decidedAt, reason)
+- `internal/approval/Manager` — creates ApprovalRequest CRD, polls for decision (5s interval)
+- Engine integration: `Decision.NeedsApproval` distinct from hard block
+- `GuardrailsSpec.ApprovalMode`: `none` / `mutation-gate` / `plan-first` / `every-action`
+- `GuardrailsSpec.ApprovalTimeout`: configurable wait duration
+- Runner wiring: three-path tool handling (needs-approval → blocked → execute)
+- `ActionStatusApproved`, `ActionStatusDenied`, `ActionStatusPendingApproval` status values
+- CLI: `legator approvals` (list with pending-first sort, status icons)
+- CLI: `legator approve <name> [reason]` / `legator deny <name> [reason]`
+- 6 approval tests
+
+#### Agent Coordination — Event Bus (Phase 3)
+- **New CRD: `AgentEvent`** — inter-agent signalling with severity, TTL, consumer tracking
+- `internal/events/Bus` — CRD-based event bus (persists through controller restarts)
+- `Publish()`: creates AgentEvent with labels for efficient filtering
+- `FindNewEvents()`: finds unconsumed events matching criteria (type, source, target, severity)
+- `Consume()`: marks events consumed, records triggered runs
+- `CleanExpired()`: TTL-based garbage collection
+- Severity ordering: info < warning < critical
+- Targeted events: only visible to the specified target agent
+- Dedup: consumed events never returned to the same agent
+- Event lifecycle: New → Consumed → (TTL expiry → deleted)
+- 7 event bus tests
+
+#### DNS Tool (Phase 4)
+- `dns.query`: A, AAAA, CNAME, MX, TXT, NS lookups
+- `dns.reverse`: IP → hostname reverse lookups
+- Custom nameserver support for internal DNS servers
+- JSON structured output for LLM consumption
+- Read-only by design (TierRead, never blocked by classification)
+- Implements both `Tool` and `ClassifiableTool` interfaces
+- DNS errors returned as result (not failures) — LLM can reason about them
+- 10s per-query timeout
+- 11 DNS tests
+
+#### Onboarding (Phase 5)
+- `legator init` — interactive wizard creates agent scaffold
+  - Prompts: name, description, namespace, autonomy, schedule, model tier, tool domain, starter skill
+  - 5 starter skill templates: cluster-health, pod-restart-monitor, certificate-expiry, server-health, custom
+  - 5 tool domains: kubernetes, ssh, http, sql, dns
+  - Generates: agent.yaml, environment.yaml, skill/SKILL.md, skill/actions.yaml
+- `legator validate` — pre-deploy validation
+  - Checks: YAML syntax, apiVersion, kind, metadata, autonomy level, schedule format, guardrails, skill, environment
+  - Emoji-coded output (✅ ❌ ⚠️), exit code 1 on errors
+- Helm chart: 3 starter skill ConfigMaps (cluster-health, pod-restart-monitor, certificate-expiry)
+- 17 init/validate tests
+
+### Stats
+- 5 tool domains: kubectl, HTTP, SSH, SQL, DNS
+- 3 connectivity modes: direct, headscale, tailscale
+- 3 built-in protection classes: kubernetes, ssh, sql
+- 366 tests across 23 packages
+- 2 new CRDs (ApprovalRequest, AgentEvent) — total 6
+
 ## [v0.3.0] — 2026-02-20
 
 ### Added
