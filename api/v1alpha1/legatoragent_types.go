@@ -208,6 +208,20 @@ type GuardrailsSpec struct {
 	// +optional
 	// +kubebuilder:default=2
 	MaxRetries int32 `json:"maxRetries,omitempty"`
+
+	// approvalMode controls how actions exceeding autonomy are handled.
+	// "none" (default): exceed → block.
+	// "mutation-gate": exceed → create ApprovalRequest, wait for decision.
+	// "plan-first": agent proposes plan, all mutations need approval.
+	// "every-action": every non-read action needs approval.
+	// +optional
+	// +kubebuilder:validation:Enum=none;mutation-gate;plan-first;every-action
+	ApprovalMode string `json:"approvalMode,omitempty"`
+
+	// approvalTimeout is the duration to wait for an approval decision before expiring.
+	// +optional
+	// +kubebuilder:default="30m"
+	ApprovalTimeout string `json:"approvalTimeout,omitempty"`
 }
 
 // EscalationSpec configures escalation behaviour.

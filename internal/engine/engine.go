@@ -41,6 +41,11 @@ type Decision struct {
 	// Allowed is true if the action may proceed.
 	Allowed bool
 
+	// NeedsApproval is true if the action requires human approval before execution.
+	// When true, Allowed is false but the action is not permanently blocked —
+	// it should be submitted for approval.
+	NeedsApproval bool
+
 	// Status is the resulting action status.
 	Status corev1alpha1.ActionStatus
 
@@ -180,6 +185,16 @@ func (e *Engine) Evaluate(toolName string, target string) *Decision {
 
 	// Step 5: Check autonomy level
 	if blocked, reason := checkAutonomy(d.Tier, e.guardrails.Autonomy); blocked {
+		// If approval mode is configured, request approval instead of hard block
+		if e.guardrails.ApprovalMode != "" && e.guardrails.ApprovalMode != "none" {
+			d.Allowed = false
+			d.NeedsApproval = true
+			d.Status = corev1alpha1.ActionStatusPendingApproval
+			d.PreFlight.AutonomyCheck = "NEEDS_APPROVAL"
+			d.PreFlight.Reason = reason
+			d.BlockReason = reason
+			return d
+		}
 		d.Allowed = false
 		d.Status = corev1alpha1.ActionStatusBlocked
 		d.PreFlight.AutonomyCheck = "BLOCKED"

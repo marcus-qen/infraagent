@@ -35,6 +35,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	corev1alpha1 "github.com/marcus-qen/legator/api/v1alpha1"
+	"github.com/marcus-qen/legator/internal/approval"
 	"github.com/marcus-qen/legator/internal/assembler"
 	"github.com/marcus-qen/legator/internal/engine"
 	"github.com/marcus-qen/legator/internal/metrics"
@@ -70,6 +71,10 @@ type RunConfig struct {
 
 	// Trigger describes what initiated this run.
 	Trigger corev1alpha1.RunTrigger
+
+	// ApprovalManager handles approval requests when actions exceed autonomy.
+	// If nil, actions that need approval are hard-blocked.
+	ApprovalManager *approval.Manager
 
 	// Cleanup is called when the run ends (success or failure).
 	// Use this to revoke dynamic credentials, close connections, etc.
@@ -304,8 +309,84 @@ func (r *Runner) conversationLoop(
 				},
 			}
 
-			if !decision.Allowed {
-				// Action blocked
+			if decision.NeedsApproval && cfg.ApprovalManager != nil {
+				// Action needs human approval — submit request and wait
+				r.log.Info("action needs approval",
+					"agent", agent.Name,
+					"tool", tc.Name,
+					"target", target,
+					"tier", decision.Tier,
+				)
+
+				approvalResult, approvalErr := cfg.ApprovalManager.RequestApproval(ctx, approval.ApprovalParams{
+					AgentName:   agent.Name,
+					RunName:     "", // set below if we have run name
+					Namespace:   agent.Namespace,
+					Tool:        tc.Name,
+					Tier:        decision.Tier,
+					Target:      target,
+					Description: fmt.Sprintf("Agent %s wants to execute %s on %s", agent.Name, tc.Name, target),
+					Timeout:     agent.Spec.Guardrails.ApprovalTimeout,
+				})
+
+				if approvalErr != nil || !approvalResult.Approved {
+					// Denied or expired or error
+					reason := decision.BlockReason
+					if approvalResult != nil {
+						if approvalResult.Phase == corev1alpha1.ApprovalPhaseDenied {
+							record.Status = corev1alpha1.ActionStatusDenied
+							reason = fmt.Sprintf("approval denied by %s: %s", approvalResult.DecidedBy, approvalResult.Reason)
+						} else {
+							record.Status = corev1alpha1.ActionStatusBlocked
+							reason = fmt.Sprintf("approval expired or failed: %v", approvalErr)
+						}
+					} else {
+						record.Status = corev1alpha1.ActionStatusBlocked
+					}
+					record.Result = reason
+					result.guardrails.ActionsBlocked++
+
+					toolResults = append(toolResults, provider.ToolResult{
+						ToolCallID: tc.ID,
+						Content:    fmt.Sprintf("APPROVAL DENIED: %s", reason),
+						IsError:    true,
+					})
+
+					telemetry.EndToolCallSpan(toolSpan, string(record.Status), true, reason)
+					result.actions = append(result.actions, record)
+					continue
+				}
+
+				// Approved — execute the tool
+				record.Status = corev1alpha1.ActionStatusApproved
+				r.log.Info("action APPROVED — executing",
+					"agent", agent.Name,
+					"tool", tc.Name,
+					"approvedBy", approvalResult.DecidedBy,
+				)
+
+				toolResult, err := cfg.ToolRegistry.Execute(ctx, tc.Name, tc.Args)
+				if err != nil {
+					record.Status = corev1alpha1.ActionStatusFailed
+					record.Result = security.SanitizeActionResult(fmt.Sprintf("execution error: %v", err), 4096)
+					toolResults = append(toolResults, provider.ToolResult{
+						ToolCallID: tc.ID,
+						Content:    fmt.Sprintf("ERROR: %v", err),
+						IsError:    true,
+					})
+				} else {
+					sanitized := security.SanitizeActionResult(toolResult, 4096)
+					record.Result = sanitized
+					eng.RecordExecution(tc.Name, target)
+					toolResults = append(toolResults, provider.ToolResult{
+						ToolCallID: tc.ID,
+						Content:    toolResult,
+					})
+				}
+
+				telemetry.EndToolCallSpan(toolSpan, string(record.Status), err != nil, "")
+			} else if !decision.Allowed {
+				// Action blocked (hard block or no approval manager)
 				record.Status = decision.Status
 				record.Result = decision.BlockReason
 				result.guardrails.ActionsBlocked++

@@ -59,10 +59,13 @@ const (
 type ActionStatus string
 
 const (
-	ActionStatusExecuted ActionStatus = "executed"
-	ActionStatusBlocked  ActionStatus = "blocked"
-	ActionStatusFailed   ActionStatus = "failed"
-	ActionStatusSkipped  ActionStatus = "skipped"
+	ActionStatusExecuted        ActionStatus = "executed"
+	ActionStatusBlocked         ActionStatus = "blocked"
+	ActionStatusFailed          ActionStatus = "failed"
+	ActionStatusSkipped         ActionStatus = "skipped"
+	ActionStatusApproved        ActionStatus = "approved"
+	ActionStatusDenied          ActionStatus = "denied"
+	ActionStatusPendingApproval ActionStatus = "pending-approval"
 )
 
 // FindingSeverity classifies an agent finding.

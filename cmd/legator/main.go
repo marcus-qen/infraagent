@@ -60,6 +60,11 @@ var (
 		Version:  "v1alpha1",
 		Resource: "legatorenvironments",
 	}
+	approvalGVR = schema.GroupVersionResource{
+		Group:    "legator.io",
+		Version:  "v1alpha1",
+		Resource: "approvalrequests",
+	}
 )
 
 func main() {
@@ -75,6 +80,28 @@ func main() {
 		handleAgents(os.Args[2:])
 	case "runs", "run":
 		handleRuns(os.Args[2:])
+	case "approvals", "approval":
+		handleApprovals(os.Args[2:])
+	case "approve":
+		if len(os.Args) < 3 {
+			fmt.Fprintln(os.Stderr, "Usage: legator approve <name> [reason]")
+			os.Exit(1)
+		}
+		reason := ""
+		if len(os.Args) > 3 {
+			reason = strings.Join(os.Args[3:], " ")
+		}
+		handleApprovalDecision(os.Args[2], "Approved", reason)
+	case "deny":
+		if len(os.Args) < 3 {
+			fmt.Fprintln(os.Stderr, "Usage: legator deny <name> [reason]")
+			os.Exit(1)
+		}
+		reason := ""
+		if len(os.Args) > 3 {
+			reason = strings.Join(os.Args[3:], " ")
+		}
+		handleApprovalDecision(os.Args[2], "Denied", reason)
 	case "status":
 		handleStatus()
 	case "version":
@@ -96,6 +123,9 @@ Usage:
   legator agents get <name>       Show agent details
   legator runs list [--agent X]   List recent runs
   legator runs logs <name>        Show run report/audit trail
+  legator approvals               List pending approvals
+  legator approve <name> [reason] Approve an action
+  legator deny <name> [reason]    Deny an action
   legator status                  Cluster-wide summary
   legator version                 Show version info
 
@@ -574,4 +604,179 @@ func formatTokens(tokens int64) string {
 func marshalJSON(v interface{}) string {
 	b, _ := json.MarshalIndent(v, "", "  ")
 	return string(b)
+}
+
+// --- Approval commands ---
+
+func handleApprovals(args []string) {
+	client, ns, err := getClient()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
+	}
+
+	// Parse namespace flag
+	namespace := ns
+	for i, arg := range args {
+		if (arg == "-n" || arg == "--namespace") && i+1 < len(args) {
+			namespace = args[i+1]
+			args = append(args[:i], args[i+2:]...)
+			break
+		}
+	}
+
+	sub := "list"
+	if len(args) > 0 {
+		sub = args[0]
+	}
+
+	switch sub {
+	case "list", "ls":
+		listApprovals(client, namespace)
+	default:
+		fmt.Fprintf(os.Stderr, "Unknown approvals subcommand: %s\n", sub)
+		os.Exit(1)
+	}
+}
+
+func listApprovals(client dynamic.Interface, namespace string) {
+	ctx := context.Background()
+
+	var list *unstructured.UnstructuredList
+	var err error
+	if namespace != "" {
+		list, err = client.Resource(approvalGVR).Namespace(namespace).List(ctx, metav1.ListOptions{})
+	} else {
+		list, err = client.Resource(approvalGVR).List(ctx, metav1.ListOptions{})
+	}
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error listing approvals: %v\n", err)
+		os.Exit(1)
+	}
+
+	if len(list.Items) == 0 {
+		fmt.Println("No approval requests found.")
+		return
+	}
+
+	// Sort: pending first, then by creation time
+	sort.Slice(list.Items, func(i, j int) bool {
+		pi := getNestedString(list.Items[i], "status", "phase")
+		pj := getNestedString(list.Items[j], "status", "phase")
+		if pi == "Pending" && pj != "Pending" {
+			return true
+		}
+		if pi != "Pending" && pj == "Pending" {
+			return false
+		}
+		ti := list.Items[i].GetCreationTimestamp()
+		tj := list.Items[j].GetCreationTimestamp()
+		return ti.After(tj.Time)
+	})
+
+	w := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
+	fmt.Fprintln(w, "STATUS\tNAME\tAGENT\tTOOL\tTIER\tAGE")
+
+	for _, item := range list.Items {
+		phase := getNestedString(item, "status", "phase")
+		if phase == "" {
+			phase = "Pending"
+		}
+		agent := getNestedString(item, "spec", "agentName")
+		tool := getNestedString(item, "spec", "action", "tool")
+		tier := getNestedString(item, "spec", "action", "tier")
+		age := formatTimeAgo(item.GetCreationTimestamp().Format(time.RFC3339))
+
+		icon := "❓"
+		switch phase {
+		case "Pending":
+			icon = "⏳"
+		case "Approved":
+			icon = "✅"
+		case "Denied":
+			icon = "❌"
+		case "Expired":
+			icon = "⏰"
+		}
+
+		fmt.Fprintf(w, "%s %s\t%s\t%s\t%s\t%s\t%s\n", icon, phase, item.GetName(), agent, tool, tier, age)
+	}
+	w.Flush()
+}
+
+func handleApprovalDecision(name, decision, reason string) {
+	client, ns, err := getClient()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
+	}
+
+	namespace := ns
+	if namespace == "" {
+		namespace = "agents" // sensible default
+	}
+
+	ctx := context.Background()
+
+	// Get the approval request
+	ar, err := client.Resource(approvalGVR).Namespace(namespace).Get(ctx, name, metav1.GetOptions{})
+	if err != nil {
+		// Try all namespaces
+		list, listErr := client.Resource(approvalGVR).List(ctx, metav1.ListOptions{})
+		if listErr != nil {
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+			os.Exit(1)
+		}
+		for _, item := range list.Items {
+			if item.GetName() == name {
+				ar = &item
+				namespace = item.GetNamespace()
+				break
+			}
+		}
+		if ar == nil {
+			fmt.Fprintf(os.Stderr, "ApprovalRequest %q not found\n", name)
+			os.Exit(1)
+		}
+	}
+
+	// Check it's still pending
+	currentPhase := getNestedString(*ar, "status", "phase")
+	if currentPhase != "" && currentPhase != "Pending" {
+		fmt.Fprintf(os.Stderr, "ApprovalRequest %q is already %s\n", name, currentPhase)
+		os.Exit(1)
+	}
+
+	// Update status
+	status := map[string]interface{}{
+		"phase":     decision,
+		"decidedBy": "legator-cli",
+		"decidedAt": time.Now().UTC().Format(time.RFC3339),
+	}
+	if reason != "" {
+		status["reason"] = reason
+	}
+
+	ar.Object["status"] = status
+
+	_, err = client.Resource(approvalGVR).Namespace(namespace).UpdateStatus(ctx, ar, metav1.UpdateOptions{})
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error updating approval: %v\n", err)
+		os.Exit(1)
+	}
+
+	icon := "✅"
+	if decision == "Denied" {
+		icon = "❌"
+	}
+
+	agent := getNestedString(*ar, "spec", "agentName")
+	tool := getNestedString(*ar, "spec", "action", "tool")
+	target := getNestedString(*ar, "spec", "action", "target")
+
+	fmt.Printf("%s %s: %s → %s %s", icon, decision, agent, tool, target)
+	if reason != "" {
+		fmt.Printf(" (%s)", reason)
+	}
+	fmt.Println()
 }
