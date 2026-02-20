@@ -172,3 +172,39 @@ securityContext:
     drop:
       - ALL
   readOnlyRootFilesystem: true
+
+# --- Dashboard ---
+dashboard:
+  enabled: false
+  replicas: 1
+  port: 8080
+
+  image:
+    repository: ghcr.io/marcus-qen/legator-dashboard
+    tag: ""  # Defaults to Chart.appVersion
+    pullPolicy: IfNotPresent
+
+  # Filter to specific namespace (empty = all namespaces)
+  namespace: ""
+
+  service:
+    type: ClusterIP
+    port: 80
+
+  # OIDC authentication (Keycloak)
+  oidc:
+    issuer: ""
+    clientID: ""
+    redirectURL: ""
+    # Reference to existing secret containing client-secret
+    clientSecretRef: {}
+    #   name: legator-dashboard-oidc
+    #   key: client-secret
+
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi

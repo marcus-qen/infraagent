@@ -66,3 +66,11 @@ Controller image.
 {{- $tag := default .Chart.AppVersion .Values.image.tag }}
 {{- printf "%s:%s" .Values.image.repository $tag }}
 {{- end }}
+
+{{/*
+Dashboard image.
+*/}}
+{{- define "legator.dashboardImage" -}}
+{{- $tag := default .Chart.AppVersion .Values.dashboard.image.tag }}
+{{- printf "%s:%s" .Values.dashboard.image.repository $tag }}
+{{- end }}
