@@ -501,14 +501,57 @@ func resourceToGVR(resource string) schema.GroupVersionResource {
 	case "modeltierconfig", "modeltierconfigs":
 		return schema.GroupVersionResource{Group: "core.infraagent.io", Version: "v1alpha1", Resource: "modeltierconfigs"}
 	// CNPG
-	case "clusters.postgresql.cnpg.io", "cluster.postgresql.cnpg.io":
+	case "clusters", "cluster", "clusters.postgresql.cnpg.io", "cluster.postgresql.cnpg.io":
 		return schema.GroupVersionResource{Group: "postgresql.cnpg.io", Version: "v1", Resource: "clusters"}
+	case "backups.postgresql.cnpg.io":
+		return schema.GroupVersionResource{Group: "postgresql.cnpg.io", Version: "v1", Resource: "backups"}
+	case "scheduledbackups", "scheduledbackup", "scheduledbackups.postgresql.cnpg.io":
+		return schema.GroupVersionResource{Group: "postgresql.cnpg.io", Version: "v1", Resource: "scheduledbackups"}
 	// Cilium
 	case "ciliumnetworkpolicies", "ciliumnetworkpolicy", "cnp":
 		return schema.GroupVersionResource{Group: "cilium.io", Version: "v2", Resource: "ciliumnetworkpolicies"}
 	// Gateway API
 	case "httproutes", "httproute":
 		return schema.GroupVersionResource{Group: "gateway.networking.k8s.io", Version: "v1", Resource: "httproutes"}
+	// Kargo
+	case "freights", "freight":
+		return schema.GroupVersionResource{Group: "kargo.akuity.io", Version: "v1alpha1", Resource: "freights"}
+	case "stages", "stage":
+		return schema.GroupVersionResource{Group: "kargo.akuity.io", Version: "v1alpha1", Resource: "stages"}
+	case "warehouses", "warehouse":
+		return schema.GroupVersionResource{Group: "kargo.akuity.io", Version: "v1alpha1", Resource: "warehouses"}
+	case "projects", "project":
+		return schema.GroupVersionResource{Group: "kargo.akuity.io", Version: "v1alpha1", Resource: "projects"}
+	case "promotions", "promotion", "promo":
+		return schema.GroupVersionResource{Group: "kargo.akuity.io", Version: "v1alpha1", Resource: "promotions"}
+	// External Secrets Operator
+	case "externalsecrets", "externalsecret", "es":
+		return schema.GroupVersionResource{Group: "external-secrets.io", Version: "v1", Resource: "externalsecrets"}
+	case "secretstores", "secretstore", "ss":
+		return schema.GroupVersionResource{Group: "external-secrets.io", Version: "v1", Resource: "secretstores"}
+	case "clustersecretstores", "clustersecretstore", "css":
+		return schema.GroupVersionResource{Group: "external-secrets.io", Version: "v1", Resource: "clustersecretstores"}
+	// Velero
+	case "backups", "backup":
+		return schema.GroupVersionResource{Group: "velero.io", Version: "v1", Resource: "backups"}
+	case "schedules", "schedule":
+		return schema.GroupVersionResource{Group: "velero.io", Version: "v1", Resource: "schedules"}
+	case "restores", "restore":
+		return schema.GroupVersionResource{Group: "velero.io", Version: "v1", Resource: "restores"}
+	case "backupstoragelocations", "backupstoragelocation", "bsl":
+		return schema.GroupVersionResource{Group: "velero.io", Version: "v1", Resource: "backupstoragelocations"}
+	// Cert-manager
+	case "certificates", "certificate", "cert", "certs":
+		return schema.GroupVersionResource{Group: "cert-manager.io", Version: "v1", Resource: "certificates"}
+	case "issuers", "issuer":
+		return schema.GroupVersionResource{Group: "cert-manager.io", Version: "v1", Resource: "issuers"}
+	case "clusterissuers", "clusterissuer":
+		return schema.GroupVersionResource{Group: "cert-manager.io", Version: "v1", Resource: "clusterissuers"}
+	// Kyverno
+	case "clusterpolicies", "clusterpolicy", "cpol":
+		return schema.GroupVersionResource{Group: "kyverno.io", Version: "v1", Resource: "clusterpolicies"}
+	case "policies", "policy", "pol":
+		return schema.GroupVersionResource{Group: "kyverno.io", Version: "v1", Resource: "policies"}
 	default:
 		// Fallback: assume core group
 		return schema.GroupVersionResource{Version: "v1", Resource: strings.ToLower(resource)}
