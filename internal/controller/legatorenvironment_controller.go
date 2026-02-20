@@ -36,9 +36,9 @@ type LegatorEnvironmentReconciler struct {
 	Scheme *runtime.Scheme
 }
 
-// +kubebuilder:rbac:groups=legator.io,resources=agentenvironments,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=legator.io,resources=agentenvironments/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups=legator.io,resources=agentenvironments/finalizers,verbs=update
+// +kubebuilder:rbac:groups=legator.io,resources=legatorenvironments,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=legator.io,resources=legatorenvironments/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=legator.io,resources=legatorenvironments/finalizers,verbs=update
 
 // Reconcile handles LegatorEnvironment create/update/delete events.
 // Phase 0: logs reconciliation and sets basic status.

@@ -9,23 +9,23 @@ rules:
   # LegatorAgent CRDs — full access
   - apiGroups: ["legator.io"]
     resources:
-      - legators
-      - agentenvironments
+      - legatoragents
+      - legatorenvironments
       - modeltierconfigs
-      - agentruns
+      - legatorruns
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
   - apiGroups: ["legator.io"]
     resources:
-      - legators/status
-      - agentenvironments/status
+      - legatoragents/status
+      - legatorenvironments/status
       - modeltierconfigs/status
-      - agentruns/status
+      - legatorruns/status
     verbs: ["get", "update", "patch"]
   - apiGroups: ["legator.io"]
     resources:
-      - legators/finalizers
-      - agentenvironments/finalizers
-      - agentruns/finalizers
+      - legatoragents/finalizers
+      - legatorenvironments/finalizers
+      - legatorruns/finalizers
     verbs: ["update"]
   # Secrets — read only (for credential resolution)
   - apiGroups: [""]

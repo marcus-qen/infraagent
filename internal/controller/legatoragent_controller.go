@@ -58,9 +58,9 @@ type LegatorAgentReconciler struct {
 	ToolRegistryFactory func(agent *corev1alpha1.LegatorAgent, env *resolver.ResolvedEnvironment) (*tools.Registry, error)
 }
 
-// +kubebuilder:rbac:groups=legator.io,resources=legators,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=legator.io,resources=legators/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups=legator.io,resources=legators/finalizers,verbs=update
+// +kubebuilder:rbac:groups=legator.io,resources=legatoragents,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=legator.io,resources=legatoragents/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=legator.io,resources=legatoragents/finalizers,verbs=update
 
 // Reconcile handles LegatorAgent create/update/delete events.
 // Phase 0: logs reconciliation and sets basic status. No execution logic yet.

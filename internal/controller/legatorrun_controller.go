@@ -34,9 +34,9 @@ type LegatorRunReconciler struct {
 	Scheme *runtime.Scheme
 }
 
-// +kubebuilder:rbac:groups=legator.io,resources=agentruns,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=legator.io,resources=agentruns/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups=legator.io,resources=agentruns/finalizers,verbs=update
+// +kubebuilder:rbac:groups=legator.io,resources=legatorruns,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=legator.io,resources=legatorruns/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=legator.io,resources=legatorruns/finalizers,verbs=update
 
 // Reconcile handles LegatorRun create/update/delete events.
 // Phase 0: logs reconciliation only. LegatorRun is primarily a status record
