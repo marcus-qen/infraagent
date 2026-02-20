@@ -2,6 +2,54 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v0.3.0] — 2026-02-20
+
+### Added
+
+#### Vault Integration
+- `internal/vault/client.go` — HashiCorp Vault API client with K8s auth and token auth
+- SSH Certificate Authority signing: short-lived SSH certs (5-min TTL) per agent run
+- Dynamic database credentials: Vault creates temporary DB users, auto-revoked on expiry
+- KV v2 secret reading for static secrets (API keys, tokens)
+- `CredentialManager` with per-run lifecycle: request at start → inject into tool → revoke at end
+- LLM never sees credentials — all injection happens at the tool layer
+- New credential types in CRD: `vault-kv`, `vault-ssh-ca`, `vault-database`
+- `VaultCredentialSpec` and `VaultConfig` CRD types
+- `RunConfig.Cleanup` wired into runner for automatic lease revocation + key zeroing
+- 17 Vault-specific tests
+
+#### SQL Tool
+- `sql.query` tool for read-only database queries (PostgreSQL + MySQL)
+- Driver-level read-only enforcement via `sql.TxOptions{ReadOnly: true}`
+- Four-tier query classification: SELECT (read) / CREATE INDEX (service) / DROP TABLE (destructive) / INSERT (data)
+- SQL injection detection: multi-statement, comment injection, suspicious UNION patterns
+- Result truncation: configurable max rows (default 1000) and max bytes (default 8KB)
+- `pgx` (PostgreSQL) and `go-sql-driver/mysql` database drivers
+- Vault credential injection: `requestVaultDBCredentials()` creates ephemeral DB users per-run
+- `buildSQLDatabases()` constructs DSNs from environment credentials
+- SQL protection class added to built-in defaults (DELETE, INSERT, UPDATE, DROP all blocked)
+- 16 SQL-specific tests
+- 3 example agents: `database-health-monitor`, `schema-drift-detector`, `query-performance-auditor`
+- Example environment with Vault database credentials
+
+#### Headscale/Tailscale Connectivity
+- `ConnectivitySpec` CRD type: `direct`, `headscale`, `tailscale`
+- `HeadscaleConnectivity`: control server, auth key, ACL tags, hostname, accept routes, exit node
+- `internal/connectivity/` package: health checks, endpoint reachability, pre-run validation
+- Tailscale sidecar in Helm chart (optional, disabled by default)
+- Userspace mode, shared Unix socket for controller ↔ sidecar communication
+- Pre-run connectivity check wired into RunConfigFactory
+- `docs/connectivity.md`: architecture, ACLs, subnet routers, troubleshooting
+- Example environment (`headscale-environment.yaml`) with Headscale + Vault
+- Example agent (`server-health-monitor`) using SSH via Headscale mesh
+- 12 connectivity tests
+
+### Changed
+- Protection engine now includes SQL protection class as built-in (alongside K8s and SSH)
+- Environment resolver exposes `Connectivity` field
+- Updated protection engine tests for 4 built-in classes (was 3)
+- 409 total tests across 18 packages (was 360 across 17)
+
 ## [v0.2.0] — 2026-02-20
 
 ### Added

@@ -166,6 +166,7 @@ Supports: Anthropic, OpenAI, Ollama, vLLM, Kimi, any OpenAI-compatible endpoint.
 | [CRD Reference](docs/crd-reference.md) | Every field in every CRD |
 | [Writing Skills](docs/skills-authoring.md) | Create custom agent expertise |
 | [Environment Binding](docs/environment-binding.md) | Configure for your target |
+| [Connectivity](docs/connectivity.md) | Headscale/Tailscale mesh VPN setup |
 | [Data Protection](docs/data-protection.md) | How data resources are protected |
 | [Guardrails Deep-Dive](docs/guardrails.md) | The complete safety model |
 | [Model Tier Config](docs/model-tier-config.md) | Provider and model setup |
@@ -205,6 +206,67 @@ spec:
 - ⏱️ Per-command timeout: 30s default
 
 Credentials are injected at the tool layer — the LLM never sees private keys or passwords.
+
+## SQL Tool
+
+Agents query databases for health monitoring, schema analysis, and performance auditing:
+
+```yaml
+apiVersion: legator.io/v1alpha1
+kind: LegatorAgent
+metadata:
+  name: database-health-monitor
+spec:
+  description: Monitor PostgreSQL health metrics
+  schedule:
+    interval: "15m"
+  guardrails:
+    autonomy: observe
+    allowedActions:
+      - "sql.query read *"
+  environmentRef: database-monitoring
+  skills:
+    - name: database-health
+      source: "configmap://skill-database-health"
+```
+
+**Safety layers:**
+- 🔒 Driver-level read-only: `sql.TxOptions{ReadOnly: true}`
+- 🧮 Query classification: SELECT (read) / INSERT (data) / DROP (destructive) — anything non-read is blocked
+- 🛡️ SQL injection detection: multi-statement, comment injection, suspicious UNION
+- 📏 Result truncation: 1000 rows / 8KB max
+- 🔑 Dynamic credentials: Vault creates ephemeral DB user per-run, auto-revoked on completion
+
+Supports PostgreSQL (via pgx) and MySQL.
+
+## Connectivity
+
+Agents reach targets across network boundaries via **Headscale** (self-hosted WireGuard mesh):
+
+```yaml
+spec:
+  connectivity:
+    type: headscale
+    headscale:
+      controlServer: "https://headscale.example.com"
+      authKeySecretRef: headscale-auth-key
+      tags: ["tag:agent-runtime"]
+      acceptRoutes: true
+```
+
+The Tailscale sidecar (optional Helm config) creates encrypted tunnels through NAT and firewalls. ACLs scope per-agent network access. Subnet routers expose entire VLANs without per-device installation.
+
+See [Connectivity Guide](docs/connectivity.md) for architecture, ACLs, and deployment models.
+
+## Vault Integration
+
+Per-run dynamic credentials — nothing static, nothing permanent:
+
+- **SSH**: Vault signs a 5-minute certificate. Target server trusts Vault CA. No static keys.
+- **Database**: Vault creates a temporary DB user with specific grants. Auto-revoked.
+- **KV**: Static secrets (API keys) stored in Vault, issued just-in-time.
+
+Credentials are injected at the tool layer. The LLM never sees them.
 
 ## CLI
 
@@ -246,12 +308,15 @@ Actions (9):
 | [watchman-light](examples/agents/watchman-light.yaml) | Endpoint monitoring (5-min cron) |
 | [legacy-server-scanner](examples/agents/legacy-server-scanner.yaml) | SSH server migration scan |
 | [patch-compliance-checker](examples/agents/patch-compliance-checker.yaml) | SSH fleet patch audit |
+| [database-health-monitor](examples/agents/database-health-monitor/) | PostgreSQL health monitoring |
+| [schema-drift-detector](examples/agents/schema-drift-detector/) | Cross-environment schema diff |
+| [server-health-monitor](examples/agents/server-health-monitor/) | SSH health checks via Headscale |
 | [multi-cluster](examples/agents/multi-cluster-watchman.yaml) | Monitor a remote cluster |
-| [All agents](examples/agents/) | Full ops team + SSH examples |
+| [All agents](examples/agents/) | Full ops team + SSH + SQL examples |
 
 ## Production Status
 
-**v0.1.0** — Running on a 4-node Talos Kubernetes cluster. 10 autonomous agents managing platform operations.
+**v0.3.0** — Running on a 4-node Talos Kubernetes cluster. 10 autonomous agents managing platform operations. Three tool domains (kubectl, SSH, SQL), Vault credential lifecycle, Headscale network connectivity.
 
 ### Dogfooding Fleet
 
@@ -282,9 +347,9 @@ Actions (9):
 | Version | Focus |
 |---------|-------|
 | **v0.1.0** ✅ | Core operator, 10 K8s agents, dogfooding |
-| **v0.2.0** 🔄 | Generalise protection classes, SSH tool, CLI |
-| **v0.3.0** | SQL + DNS tools, Headscale connectivity, web dashboard |
-| **v0.4.0** | A2A protocol, skill marketplace, multi-tenant |
+| **v0.2.0** ✅ | Rename to Legator, protection classes, SSH tool, CLI |
+| **v0.3.0** ✅ | Vault integration, SQL tool, Headscale connectivity |
+| **v0.4.0** | Web dashboard, DNS tool, A2A protocol, multi-tenant |
 
 ## License
 

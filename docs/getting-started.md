@@ -194,5 +194,16 @@ kubectl describe agentrun watchman-abc123 -n agents
 - [Writing Skills](skills-authoring.md) — create custom agent expertise
 - [Guardrails Deep-Dive](guardrails.md) — understand the safety model
 - [Environment Binding](environment-binding.md) — configure for your cluster
+- [Connectivity](connectivity.md) — Headscale/Tailscale mesh VPN for non-K8s targets
 - [Data Protection](data-protection.md) — how data resources are protected
 - [Troubleshooting](troubleshooting.md) — common issues and solutions
+
+## Beyond Kubernetes
+
+Legator agents manage more than clusters. With v0.3.0:
+
+- **SSH Tool** — manage servers via `ssh.exec` with Vault-signed certificates
+- **SQL Tool** — query databases via `sql.query` with dynamic Vault credentials
+- **Headscale** — reach targets across networks via WireGuard mesh VPN
+
+See the [examples/](../examples/) directory for SSH, SQL, and Headscale agent configurations.
