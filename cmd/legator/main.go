@@ -102,6 +102,8 @@ func main() {
 			reason = strings.Join(os.Args[3:], " ")
 		}
 		handleApprovalDecision(os.Args[2], "Denied", reason)
+	case "skill", "skills":
+		handleSkill(os.Args[2:])
 	case "init":
 		handleInit(os.Args[2:])
 	case "validate":
@@ -130,6 +132,10 @@ Usage:
   legator approvals               List pending approvals
   legator approve <name> [reason] Approve an action
   legator deny <name> [reason]    Deny an action
+  legator skill pack <dir>        Package a skill directory
+  legator skill push <dir> <ref>  Push skill to OCI registry
+  legator skill pull <ref> [dir]  Pull skill from OCI registry
+  legator skill inspect <dir>     Show skill manifest
   legator init [directory]        Create a new agent (interactive wizard)
   legator validate <directory>    Validate an agent directory
   legator status                  Cluster-wide summary
