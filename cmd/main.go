@@ -374,8 +374,18 @@ func main() {
 		var credStore *tools.HTTPCredentialStore
 		if env != nil && len(env.Credentials) > 0 {
 			credMappings := buildHTTPCredentialMappings(env)
+			setupLog.Info("HTTP credential mappings built",
+				"agent", agent.Name,
+				"credentialCount", len(env.Credentials),
+				"mappingCount", len(credMappings))
 			if len(credMappings) > 0 {
 				credStore = tools.NewHTTPCredentialStore(credMappings)
+			}
+		} else {
+			if env == nil {
+				setupLog.Info("No environment for HTTP credentials", "agent", agent.Name)
+			} else {
+				setupLog.Info("No credentials in environment", "agent", agent.Name, "credentialCount", len(env.Credentials))
 			}
 		}
 		// Register HTTP tools with credential store

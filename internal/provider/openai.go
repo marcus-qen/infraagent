@@ -18,6 +18,7 @@ import (
 	"io"
 	"math"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -247,7 +248,11 @@ func (p *OpenAIProvider) parseResponse(apiResp *openaiResponse) *CompletionRespo
 }
 
 func (p *OpenAIProvider) doWithRetry(ctx context.Context, body []byte, result *openaiResponse) error {
+	// Support endpoints that already include /v1 (e.g. Kimi: https://api.moonshot.ai/v1)
 	url := p.endpoint + "/v1/chat/completions"
+	if strings.HasSuffix(p.endpoint, "/v1") {
+		url = p.endpoint + "/chat/completions"
+	}
 
 	for attempt := 0; attempt <= p.maxRetries; attempt++ {
 		if attempt > 0 {

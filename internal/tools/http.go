@@ -119,11 +119,11 @@ func (t *HTTPGetTool) Execute(ctx context.Context, args map[string]interface{}) 
 		}
 	}
 
-	// Auto-inject credentials for matching URLs
-	if req.Header.Get("Authorization") == "" {
-		if auth := t.creds.AuthHeader(url); auth != "" {
-			req.Header.Set("Authorization", auth)
-		}
+	// Auto-inject credentials for matching URLs.
+	// Always override: the LLM may set placeholder values like "{credentials.github-pat}"
+	// from skill instructions. The credential store has the real resolved values.
+	if auth := t.creds.AuthHeader(url); auth != "" {
+		req.Header.Set("Authorization", auth)
 	}
 
 	resp, err := t.client.Do(req)

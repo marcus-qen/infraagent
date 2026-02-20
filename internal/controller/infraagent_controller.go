@@ -126,7 +126,15 @@ func (r *InfraAgentReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 						var resolvedEnv *resolver.ResolvedEnvironment
 						if agent.Spec.EnvironmentRef != "" {
 							envResolver := resolver.NewEnvironmentResolver(r.Client, agent.Namespace)
-							resolvedEnv, _ = envResolver.Resolve(runCtx, agent.Spec.EnvironmentRef)
+							var envErr error
+							resolvedEnv, envErr = envResolver.Resolve(runCtx, agent.Spec.EnvironmentRef)
+							if envErr != nil {
+								runLog.Error(envErr, "Failed to resolve environment for credentials", "env", agent.Spec.EnvironmentRef)
+							} else if resolvedEnv != nil {
+								runLog.Info("Resolved environment for credentials",
+									"env", agent.Spec.EnvironmentRef,
+									"credentialCount", len(resolvedEnv.Credentials))
+							}
 						}
 						reg, err := r.ToolRegistryFactory(agent, resolvedEnv)
 						if err != nil {
