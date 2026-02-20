@@ -11,7 +11,7 @@ You may obtain a copy of the License at
 // Package multicluster provides remote Kubernetes client factories for
 // agents that manage clusters other than the one the controller runs on.
 //
-// When an AgentEnvironment specifies connection.kind: "kubeconfig", the
+// When an LegatorEnvironment specifies connection.kind: "kubeconfig", the
 // factory reads the referenced Secret, builds a rest.Config, and returns
 // a client.Client scoped to the remote cluster. For "in-cluster" mode,
 // it returns nil (caller uses the default client).
@@ -31,7 +31,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	corev1alpha1 "github.com/marcus-qen/infraagent/api/v1alpha1"
+	corev1alpha1 "github.com/marcus-qen/legator/api/v1alpha1"
 )
 
 // cacheKey identifies a unique kubeconfig origin.
@@ -62,9 +62,9 @@ func NewClientFactory(localClient client.Client, scheme *runtime.Scheme) *Client
 }
 
 // ClientForEnvironment returns a Kubernetes client appropriate for the given
-// AgentEnvironment. Returns nil if the environment uses in-cluster connection
+// LegatorEnvironment. Returns nil if the environment uses in-cluster connection
 // (meaning the caller should use its default client).
-func (f *ClientFactory) ClientForEnvironment(ctx context.Context, env *corev1alpha1.AgentEnvironment) (client.Client, error) {
+func (f *ClientFactory) ClientForEnvironment(ctx context.Context, env *corev1alpha1.LegatorEnvironment) (client.Client, error) {
 	conn := env.Spec.Connection
 	if conn == nil || conn.Kind == "in-cluster" {
 		return nil, nil // use default

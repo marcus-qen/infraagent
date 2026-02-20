@@ -8,7 +8,7 @@ You may obtain a copy of the License at
     http://www.apache.org/licenses/LICENSE-2.0
 */
 
-// Package tools provides the built-in tool implementations for InfraAgent.
+// Package tools provides the built-in tool implementations for LegatorAgent.
 // Tools are the bridge between LLM tool_use requests and actual infrastructure operations.
 //
 // Each tool registers itself with a ToolRegistry and can be called by the runner.
@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/marcus-qen/infraagent/internal/provider"
+	"github.com/marcus-qen/legator/internal/provider"
 )
 
 // Tool is the interface for executable tools.

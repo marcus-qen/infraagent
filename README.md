@@ -1,7 +1,7 @@
-# InfraAgent
+# LegatorAgent
 
-[![CI](https://github.com/marcus-qen/infraagent/actions/workflows/ci.yaml/badge.svg)](https://github.com/marcus-qen/infraagent/actions/workflows/ci.yaml)
-[![Go Report Card](https://goreportcard.com/badge/github.com/marcus-qen/infraagent)](https://goreportcard.com/report/github.com/marcus-qen/infraagent)
+[![CI](https://github.com/marcus-qen/legator/actions/workflows/ci.yaml/badge.svg)](https://github.com/marcus-qen/legator/actions/workflows/ci.yaml)
+[![Go Report Card](https://goreportcard.com/badge/github.com/marcus-qen/legator)](https://goreportcard.com/report/github.com/marcus-qen/legator)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
 **Kubernetes operator for autonomous infrastructure agents — lights-out cluster management with hard safety guarantees.**
@@ -10,7 +10,7 @@
 
 ## What Is This?
 
-InfraAgent is a Kubernetes operator that runs autonomous LLM-powered agents to manage your infrastructure. Install it on any cluster, apply CRDs defining your agents, and they start monitoring, triaging, deploying, and remediating — automatically, safely, and with a complete audit trail.
+LegatorAgent is a Kubernetes operator that runs autonomous LLM-powered agents to manage your infrastructure. Install it on any cluster, apply CRDs defining your agents, and they start monitoring, triaging, deploying, and remediating — automatically, safely, and with a complete audit trail.
 
 ## Design Principles
 
@@ -25,18 +25,18 @@ InfraAgent is a Kubernetes operator that runs autonomous LLM-powered agents to m
 
 ```
 ┌──────────────────────────────────────────────────────────────────────┐
-│                    infraagent-controller (Go)                        │
+│                    legator-controller (Go)                        │
 │                                                                      │
 │  ┌─────────────┐  ┌─────────────┐  ┌──────────────────────────────┐ │
 │  │ CRD Watcher  │  │  Schedule   │  │       Agent Runner           │ │
 │  │             │  │  Controller │  │                              │ │
-│  │ InfraAgent  │→ │  Cron       │→ │  1. Assemble prompt          │ │
+│  │ LegatorAgent  │→ │  Cron       │→ │  1. Assemble prompt          │ │
 │  │ AgentEnv    │  │  Interval   │  │  2. Match Action Sheet       │ │
 │  │ ModelTier   │  │  Webhook    │  │  3. Call LLM                 │ │
 │  └─────────────┘  └─────────────┘  │  4. Pre-flight check action  │ │
 │                                     │  5. Enforce guardrails       │ │
 │                                     │  6. Execute or block         │ │
-│                                     │  7. Log to AgentRun          │ │
+│                                     │  7. Log to LegatorRun          │ │
 │                                     │  8. Report findings          │ │
 │                                     └──────────────────────────────┘ │
 │                                                                      │
@@ -61,16 +61,16 @@ InfraAgent is a Kubernetes operator that runs autonomous LLM-powered agents to m
 
 | CRD | Purpose | Scope |
 |-----|---------|-------|
-| **InfraAgent** | Agent definition — identity, schedule, model tier, guardrails, skills | Namespaced |
-| **AgentEnvironment** | Site binding — endpoints, credentials, namespaces, data resources, MCP servers | Namespaced |
+| **LegatorAgent** | Agent definition — identity, schedule, model tier, guardrails, skills | Namespaced |
+| **LegatorEnvironment** | Site binding — endpoints, credentials, namespaces, data resources, MCP servers | Namespaced |
 | **ModelTierConfig** | Maps tier names (fast/standard/reasoning) → provider/model + auth | Cluster |
-| **AgentRun** | Immutable audit record — every action, pre-flight check, block, escalation | Namespaced |
+| **LegatorRun** | Immutable audit record — every action, pre-flight check, block, escalation | Namespaced |
 
 ## Quick Start
 
 ```bash
 # Install the operator
-helm install infraagent charts/infraagent/ -n infraagent-system --create-namespace
+helm install legator charts/legator/ -n legator-system --create-namespace
 
 # Configure model access
 kubectl apply -f examples/model-tier-config.yaml
@@ -82,7 +82,7 @@ kubectl apply -f examples/environments/dev-lab.yaml -n agents
 kubectl apply -f examples/agents/watchman-light.yaml -n agents
 
 # Check status
-kubectl get infraagents -n agents
+kubectl get legators -n agents
 kubectl get agentruns -n agents
 ```
 
@@ -116,15 +116,15 @@ Skills declare every action they can perform in `actions.yaml`. The runtime enfo
 ## Three-Layer Architecture
 
 ```
-InfraAgent (what/when/guardrails)
+LegatorAgent (what/when/guardrails)
   + Skills (expertise — Agent Skills format)
-  + AgentEnvironment (where — site-specific)
+  + LegatorEnvironment (where — site-specific)
   = Runnable, scheduled, guardrailed agent
 ```
 
-- **InfraAgent** is portable — deploy the same agent spec on any cluster
+- **LegatorAgent** is portable — deploy the same agent spec on any cluster
 - **Skills** are portable — infrastructure-agnostic behavioral knowledge
-- **AgentEnvironment** is site-specific — created per deployment target
+- **LegatorEnvironment** is site-specific — created per deployment target
 
 ## Model Tiers
 
@@ -171,7 +171,7 @@ Supports: Anthropic, OpenAI, Ollama, any OpenAI-compatible endpoint. Auth: API k
 
 ## Dogfooding
 
-InfraAgent is running on a 4-node Talos Kubernetes cluster, managing the same platform it was built on. Ten autonomous agents handle monitoring, deployment verification, issue triage, security auditing, and daily briefings — replacing manually-scheduled cron jobs.
+LegatorAgent is running on a 4-node Talos Kubernetes cluster, managing the same platform it was built on. Ten autonomous agents handle monitoring, deployment verification, issue triage, security auditing, and daily briefings — replacing manually-scheduled cron jobs.
 
 ### Fleet (live data from dogfooding)
 
@@ -209,7 +209,7 @@ Safety: Four-tier action classification, graduated autonomy, undeclared-action d
 
 Integration: Prometheus metrics (9 gauges/counters/histograms), OpenTelemetry tracing (GenAI conventions), Grafana dashboard, MCP client (k8sgpt), Git+ConfigMap skill loading.
 
-Production: Multi-cluster support, rate limiting (per-agent + cluster-wide), AgentRun retention (TTL + preserve-min), graceful shutdown, leader election.
+Production: Multi-cluster support, rate limiting (per-agent + cluster-wide), LegatorRun retention (TTL + preserve-min), graceful shutdown, leader election.
 
 Providers: Anthropic, OpenAI, and any OpenAI-compatible endpoint (Kimi, Ollama, vLLM, etc.) with configurable base URL.
 

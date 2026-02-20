@@ -12,7 +12,7 @@ You may obtain a copy of the License at
 // tool execution → guardrail enforcement → audit trail recording.
 //
 // This is the central loop:
-//  1. Create AgentRun CR (Pending)
+//  1. Create LegatorRun CR (Pending)
 //  2. Assemble prompt via assembler
 //  3. Enter conversation loop:
 //     a. Send to LLM
@@ -20,7 +20,7 @@ You may obtain a copy of the License at
 //     c. Feed results back to LLM
 //     d. Repeat until end_turn or budget exhausted
 //  4. Record findings, usage, guardrail summary
-//  5. Mark AgentRun terminal (Succeeded/Failed/Escalated/Blocked)
+//  5. Mark LegatorRun terminal (Succeeded/Failed/Escalated/Blocked)
 package runner
 
 import (
@@ -34,14 +34,14 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	corev1alpha1 "github.com/marcus-qen/infraagent/api/v1alpha1"
-	"github.com/marcus-qen/infraagent/internal/assembler"
-	"github.com/marcus-qen/infraagent/internal/engine"
-	"github.com/marcus-qen/infraagent/internal/metrics"
-	"github.com/marcus-qen/infraagent/internal/provider"
-	"github.com/marcus-qen/infraagent/internal/security"
-	"github.com/marcus-qen/infraagent/internal/telemetry"
-	"github.com/marcus-qen/infraagent/internal/tools"
+	corev1alpha1 "github.com/marcus-qen/legator/api/v1alpha1"
+	"github.com/marcus-qen/legator/internal/assembler"
+	"github.com/marcus-qen/legator/internal/engine"
+	"github.com/marcus-qen/legator/internal/metrics"
+	"github.com/marcus-qen/legator/internal/provider"
+	"github.com/marcus-qen/legator/internal/security"
+	"github.com/marcus-qen/legator/internal/telemetry"
+	"github.com/marcus-qen/legator/internal/tools"
 )
 
 // Runner executes a single agent run from start to finish.
@@ -73,9 +73,9 @@ type RunConfig struct {
 }
 
 // Execute runs a full agent lifecycle.
-// It creates an AgentRun CR, assembles the prompt, enters the tool-use loop,
+// It creates an LegatorRun CR, assembles the prompt, enters the tool-use loop,
 // and records the complete audit trail.
-func (r *Runner) Execute(ctx context.Context, agent *corev1alpha1.InfraAgent, cfg RunConfig) (*corev1alpha1.AgentRun, error) {
+func (r *Runner) Execute(ctx context.Context, agent *corev1alpha1.LegatorAgent, cfg RunConfig) (*corev1alpha1.LegatorRun, error) {
 	startTime := time.Now()
 
 	// Telemetry: parent span for the entire run
@@ -106,17 +106,17 @@ func (r *Runner) Execute(ctx context.Context, agent *corev1alpha1.InfraAgent, cf
 	}
 	asmSpan.End()
 
-	// Step 2: Create AgentRun CR
-	run := r.createAgentRun(agent, assembled, cfg.Trigger)
+	// Step 2: Create LegatorRun CR
+	run := r.createLegatorRun(agent, assembled, cfg.Trigger)
 	if err := r.client.Create(ctx, run); err != nil {
-		return nil, fmt.Errorf("create AgentRun: %w", err)
+		return nil, fmt.Errorf("create LegatorRun: %w", err)
 	}
 
 	// Step 3: Mark as Running
 	run.Status.Phase = corev1alpha1.RunPhaseRunning
 	run.Status.StartTime = &metav1.Time{Time: startTime}
 	if err := r.client.Status().Update(ctx, run); err != nil {
-		r.log.Error(err, "failed to update AgentRun status to Running")
+		r.log.Error(err, "failed to update LegatorRun status to Running")
 	}
 
 	// Step 4: Create the engine
@@ -130,7 +130,7 @@ func (r *Runner) Execute(ctx context.Context, agent *corev1alpha1.InfraAgent, cf
 	// Step 5: Execute the conversation loop
 	result := r.conversationLoop(ctx, assembled, eng, cfg, agent)
 
-	// Step 6: Finalize the AgentRun (use fresh context — run ctx may be expired)
+	// Step 6: Finalize the LegatorRun (use fresh context — run ctx may be expired)
 	finalizeCtx, finalizeCancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer finalizeCancel()
 	r.finalizeRun(finalizeCtx, run, result, startTime, agent, assembled)
@@ -156,7 +156,7 @@ func (r *Runner) conversationLoop(
 	assembled *assembler.AssembledAgent,
 	eng *engine.Engine,
 	cfg RunConfig,
-	agent *corev1alpha1.InfraAgent,
+	agent *corev1alpha1.LegatorAgent,
 ) *conversationResult {
 	result := &conversationResult{
 		phase: corev1alpha1.RunPhaseSucceeded,
@@ -398,62 +398,62 @@ func (r *Runner) conversationLoop(
 	return result
 }
 
-func (r *Runner) createAgentRun(
-	agent *corev1alpha1.InfraAgent,
+func (r *Runner) createLegatorRun(
+	agent *corev1alpha1.LegatorAgent,
 	assembled *assembler.AssembledAgent,
 	trigger corev1alpha1.RunTrigger,
-) *corev1alpha1.AgentRun {
-	return &corev1alpha1.AgentRun{
+) *corev1alpha1.LegatorRun {
+	return &corev1alpha1.LegatorRun{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: agent.Name + "-",
 			Namespace:    agent.Namespace,
 			Labels: map[string]string{
-				"infraagent.io/agent": agent.Name,
+				"legator.io/agent": agent.Name,
 			},
 			OwnerReferences: []metav1.OwnerReference{
 				{
 					APIVersion: corev1alpha1.GroupVersion.String(),
-					Kind:       "InfraAgent",
+					Kind:       "LegatorAgent",
 					Name:       agent.Name,
 					UID:        agent.UID,
 				},
 			},
 		},
-		Spec: corev1alpha1.AgentRunSpec{
+		Spec: corev1alpha1.LegatorRunSpec{
 			AgentRef:       agent.Name,
 			EnvironmentRef: agent.Spec.EnvironmentRef,
 			Trigger:        trigger,
 			ModelUsed:      assembled.Model.FullModelString,
 		},
-		Status: corev1alpha1.AgentRunStatus{
+		Status: corev1alpha1.LegatorRunStatus{
 			Phase: corev1alpha1.RunPhasePending,
 		},
 	}
 }
 
 func (r *Runner) createFailedRun(
-	agent *corev1alpha1.InfraAgent,
+	agent *corev1alpha1.LegatorAgent,
 	trigger corev1alpha1.RunTrigger,
 	startTime time.Time,
 	reason string,
-) *corev1alpha1.AgentRun {
+) *corev1alpha1.LegatorRun {
 	now := metav1.Now()
 	wallClock := time.Since(startTime).Milliseconds()
 
-	return &corev1alpha1.AgentRun{
+	return &corev1alpha1.LegatorRun{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: agent.Name + "-",
 			Namespace:    agent.Namespace,
 			Labels: map[string]string{
-				"infraagent.io/agent": agent.Name,
+				"legator.io/agent": agent.Name,
 			},
 		},
-		Spec: corev1alpha1.AgentRunSpec{
+		Spec: corev1alpha1.LegatorRunSpec{
 			AgentRef:       agent.Name,
 			EnvironmentRef: agent.Spec.EnvironmentRef,
 			Trigger:        trigger,
 		},
-		Status: corev1alpha1.AgentRunStatus{
+		Status: corev1alpha1.LegatorRunStatus{
 			Phase:          corev1alpha1.RunPhaseFailed,
 			StartTime:      &metav1.Time{Time: startTime},
 			CompletionTime: &now,
@@ -467,10 +467,10 @@ func (r *Runner) createFailedRun(
 
 func (r *Runner) finalizeRun(
 	ctx context.Context,
-	run *corev1alpha1.AgentRun,
+	run *corev1alpha1.LegatorRun,
 	result *conversationResult,
 	startTime time.Time,
-	agent *corev1alpha1.InfraAgent,
+	agent *corev1alpha1.LegatorAgent,
 	assembled *assembler.AssembledAgent,
 ) {
 	now := metav1.Now()
@@ -506,9 +506,9 @@ func (r *Runner) finalizeRun(
 	}
 	run.Status.Conditions = []metav1.Condition{condition}
 
-	// Update AgentRun status (terminal — no more modifications after this)
+	// Update LegatorRun status (terminal — no more modifications after this)
 	if err := r.client.Status().Update(ctx, run); err != nil {
-		r.log.Error(err, "failed to finalize AgentRun",
+		r.log.Error(err, "failed to finalize LegatorRun",
 			"agentRun", run.Name,
 			"phase", result.phase,
 		)
@@ -550,7 +550,7 @@ func (r *Runner) buildBudgetUsage(
 	result *conversationResult,
 	tokenBudget int64,
 	maxIterations int32,
-	agent *corev1alpha1.InfraAgent,
+	agent *corev1alpha1.LegatorAgent,
 ) *corev1alpha1.BudgetUsage {
 	timeout, _ := time.ParseDuration(agent.Spec.Model.Timeout)
 

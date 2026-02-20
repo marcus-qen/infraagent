@@ -1,6 +1,6 @@
 # Writing Skills
 
-A skill is an agent's expertise — the instructions and declared actions that define what the agent knows how to do. Skills are portable: the same skill works across different clusters by binding to different AgentEnvironments.
+A skill is an agent's expertise — the instructions and declared actions that define what the agent knows how to do. Skills are portable: the same skill works across different clusters by binding to different LegatorEnvironments.
 
 ## Skill Structure
 
@@ -195,7 +195,7 @@ The runtime validates skills at load time:
 4. Action IDs must be unique within the skill
 5. Tier values must be valid enum values
 
-Invalid skills are rejected and the error appears in the InfraAgent's status conditions.
+Invalid skills are rejected and the error appears in the LegatorAgent's status conditions.
 
 ## Best Practices
 

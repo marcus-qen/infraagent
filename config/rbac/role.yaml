@@ -5,11 +5,11 @@ metadata:
   name: manager-role
 rules:
 - apiGroups:
-  - core.infraagent.io
+  - legator.io
   resources:
   - agentenvironments
   - agentruns
-  - infraagents
+  - legators
   - modeltierconfigs
   verbs:
   - create
@@ -20,20 +20,20 @@ rules:
   - update
   - watch
 - apiGroups:
-  - core.infraagent.io
+  - legator.io
   resources:
   - agentenvironments/finalizers
   - agentruns/finalizers
-  - infraagents/finalizers
+  - legators/finalizers
   - modeltierconfigs/finalizers
   verbs:
   - update
 - apiGroups:
-  - core.infraagent.io
+  - legator.io
   resources:
   - agentenvironments/status
   - agentruns/status
-  - infraagents/status
+  - legators/status
   - modeltierconfigs/status
   verbs:
   - get

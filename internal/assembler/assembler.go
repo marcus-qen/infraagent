@@ -18,9 +18,9 @@ import (
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	corev1alpha1 "github.com/marcus-qen/infraagent/api/v1alpha1"
-	"github.com/marcus-qen/infraagent/internal/resolver"
-	"github.com/marcus-qen/infraagent/internal/skill"
+	corev1alpha1 "github.com/marcus-qen/legator/api/v1alpha1"
+	"github.com/marcus-qen/legator/internal/resolver"
+	"github.com/marcus-qen/legator/internal/skill"
 )
 
 // AssembledAgent is the complete output of the assembly process —
@@ -47,11 +47,11 @@ type AssembledAgent struct {
 	// Warnings is a list of non-fatal assembly warnings.
 	Warnings []string
 
-	// Agent is a reference to the source InfraAgent.
-	Agent *corev1alpha1.InfraAgent
+	// Agent is a reference to the source LegatorAgent.
+	Agent *corev1alpha1.LegatorAgent
 }
 
-// Assembler combines InfraAgent + Skills + AgentEnvironment into a runnable agent.
+// Assembler combines LegatorAgent + Skills + LegatorEnvironment into a runnable agent.
 type Assembler struct {
 	client client.Client
 }
@@ -62,7 +62,7 @@ func New(c client.Client) *Assembler {
 }
 
 // Assemble loads all components and produces an AssembledAgent.
-func (a *Assembler) Assemble(ctx context.Context, agent *corev1alpha1.InfraAgent) (*AssembledAgent, error) {
+func (a *Assembler) Assemble(ctx context.Context, agent *corev1alpha1.LegatorAgent) (*AssembledAgent, error) {
 	result := &AssembledAgent{
 		Agent:          agent,
 		ActionRegistry: make(map[string]*skill.Action),
@@ -126,7 +126,7 @@ func (a *Assembler) Assemble(ctx context.Context, agent *corev1alpha1.InfraAgent
 
 // buildPrompt constructs the complete system prompt from all components.
 func buildPrompt(
-	agent *corev1alpha1.InfraAgent,
+	agent *corev1alpha1.LegatorAgent,
 	skills []*skill.Skill,
 	env *resolver.ResolvedEnvironment,
 	model *resolver.ResolvedModel,

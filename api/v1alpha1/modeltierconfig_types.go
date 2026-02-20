@@ -78,7 +78,7 @@ type TierMapping struct {
 	MaxTokens int32 `json:"maxTokens,omitempty"`
 
 	// costPerMillionInput is the estimated cost per million input tokens (USD).
-	// Used for cost reporting in AgentRuns.
+	// Used for cost reporting in LegatorRuns.
 	// +optional
 	CostPerMillionInput string `json:"costPerMillionInput,omitempty"`
 

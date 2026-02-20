@@ -9,7 +9,7 @@ You may obtain a copy of the License at
 */
 
 // Package lifecycle provides graceful shutdown coordination for the
-// InfraAgent controller. It tracks in-progress agent runs and ensures
+// LegatorAgent controller. It tracks in-progress agent runs and ensures
 // they either complete or are cleanly terminated before the process exits.
 //
 // The ShutdownManager integrates with the scheduler's RunTracker to know

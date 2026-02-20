@@ -32,7 +32,7 @@ type WebhookHandler struct {
 	triggers  chan WebhookTrigger
 
 	// agentMap maps source names to agent NamespacedNames.
-	// Populated from InfraAgent trigger specs.
+	// Populated from LegatorAgent trigger specs.
 	agentMap map[string][]types.NamespacedName
 }
 

@@ -54,7 +54,7 @@ jobs:
 
       - name: Build Docker image
         run: |
-          make docker-build IMG=infraagent:ci-${{ github.sha }}
+          make docker-build IMG=legator:ci-${{ github.sha }}
 
   helm-lint:
     name: Helm Lint
@@ -65,4 +65,4 @@ jobs:
       - uses: azure/setup-helm@v4
 
       - name: Lint chart
-        run: helm lint charts/infraagent/
+        run: helm lint charts/legator/

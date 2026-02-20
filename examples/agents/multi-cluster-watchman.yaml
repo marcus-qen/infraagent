@@ -1,7 +1,7 @@
 # Multi-cluster example: monitor a remote production cluster
-# from the management cluster where InfraAgent is installed.
-apiVersion: core.infraagent.io/v1alpha1
-kind: InfraAgent
+# from the management cluster where LegatorAgent is installed.
+apiVersion: legator.io/v1alpha1
+kind: LegatorAgent
 metadata:
   name: prod-watchman
   namespace: agents
@@ -31,8 +31,8 @@ spec:
   # Points to an environment with connection.kind: kubeconfig
   environmentRef: production
 ---
-apiVersion: core.infraagent.io/v1alpha1
-kind: AgentEnvironment
+apiVersion: legator.io/v1alpha1
+kind: LegatorEnvironment
 metadata:
   name: production
   namespace: agents

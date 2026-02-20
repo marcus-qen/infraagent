@@ -1,6 +1,6 @@
 # Guardrails Deep-Dive
 
-The guardrail system is the safety-critical core of InfraAgent. It physically blocks actions that exceed an agent's authority — the LLM never sees the result of a blocked action.
+The guardrail system is the safety-critical core of LegatorAgent. It physically blocks actions that exceed an agent's authority — the LLM never sees the result of a blocked action.
 
 ## Defence in Depth
 
@@ -57,7 +57,7 @@ Patterns use glob syntax:
 
 ## Allow/Deny Lists
 
-In addition to Action Sheets, the InfraAgent spec has allow/deny lists:
+In addition to Action Sheets, the LegatorAgent spec has allow/deny lists:
 
 ```yaml
 guardrails:
@@ -153,13 +153,13 @@ guardrails:
 
 The guardrail system emits Prometheus metrics:
 
-- `infraagent_guardrail_blocks_total{agent,action,tier}` — every block counted
-- `infraagent_escalations_total{agent,reason}` — every escalation counted
-- `infraagent_runs_total{agent,status}` — run outcomes
+- `legator_guardrail_blocks_total{agent,action,tier}` — every block counted
+- `legator_escalations_total{agent,reason}` — every escalation counted
+- `legator_runs_total{agent,status}` — run outcomes
 
 ## Audit Trail
 
-Every guardrail decision is recorded in the AgentRun CR:
+Every guardrail decision is recorded in the LegatorRun CR:
 
 ```yaml
 status:

@@ -64,7 +64,7 @@ jobs:
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
           labels: |
-            org.opencontainers.image.title=infraagent
+            org.opencontainers.image.title=legator
             org.opencontainers.image.description=Kubernetes operator for autonomous infrastructure agents
             org.opencontainers.image.version=${{ steps.version.outputs.version }}
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
@@ -109,26 +109,26 @@ jobs:
 
       - name: Update chart version from tag
         run: |
-          sed -i "s/^version:.*/version: ${{ steps.version.outputs.version }}/" charts/infraagent/Chart.yaml
-          sed -i "s/^appVersion:.*/appVersion: \"${{ steps.version.outputs.version }}\"/" charts/infraagent/Chart.yaml
+          sed -i "s/^version:.*/version: ${{ steps.version.outputs.version }}/" charts/legator/Chart.yaml
+          sed -i "s/^appVersion:.*/appVersion: \"${{ steps.version.outputs.version }}\"/" charts/legator/Chart.yaml
 
       - name: Lint chart
-        run: helm lint charts/infraagent/
+        run: helm lint charts/legator/
 
       - name: Package chart
-        run: helm package charts/infraagent/ --destination /tmp/helm-packages/
+        run: helm package charts/legator/ --destination /tmp/helm-packages/
 
       - name: Log in to GHCR (Helm OCI)
         run: echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
 
       - name: Push chart to GHCR OCI
-        run: helm push /tmp/helm-packages/infraagent-${{ steps.version.outputs.version }}.tgz oci://${{ env.REGISTRY }}/${{ github.repository }}/charts
+        run: helm push /tmp/helm-packages/legator-${{ steps.version.outputs.version }}.tgz oci://${{ env.REGISTRY }}/${{ github.repository }}/charts
 
       - name: Upload chart as artifact
         uses: actions/upload-artifact@v4
         with:
           name: helm-chart
-          path: /tmp/helm-packages/infraagent-${{ steps.version.outputs.version }}.tgz
+          path: /tmp/helm-packages/legator-${{ steps.version.outputs.version }}.tgz
 
   github-release:
     name: Create GitHub Release
@@ -167,9 +167,9 @@ jobs:
       - name: Create release
         uses: softprops/action-gh-release@v2
         with:
-          name: InfraAgent ${{ github.ref_name }}
+          name: LegatorAgent ${{ github.ref_name }}
           body: |
-            ## InfraAgent ${{ github.ref_name }}
+            ## LegatorAgent ${{ github.ref_name }}
 
             Kubernetes operator for autonomous infrastructure agents — lights-out cluster management with hard safety guarantees.
 
@@ -180,9 +180,9 @@ jobs:
             docker pull ghcr.io/${{ github.repository }}:${{ github.ref_name }}
 
             # Helm chart (OCI)
-            helm install infraagent oci://ghcr.io/${{ github.repository }}/charts/infraagent \
+            helm install legator oci://ghcr.io/${{ github.repository }}/charts/legator \
               --version ${{ steps.version.outputs.version }} \
-              --namespace infraagent-system --create-namespace
+              --namespace legator-system --create-namespace
 
             # Verify image signature
             cosign verify ghcr.io/${{ github.repository }}:${{ github.ref_name }}
@@ -196,9 +196,9 @@ jobs:
 
             - 📖 [Documentation](https://github.com/${{ github.repository }}/tree/${{ github.ref_name }}/docs)
             - 🚀 [Getting Started](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/docs/getting-started.md)
-            - 📦 [Helm Chart](https://github.com/${{ github.repository }}/pkgs/container/infraagent%2Fcharts%2Finfraagent)
+            - 📦 [Helm Chart](https://github.com/${{ github.repository }}/pkgs/container/legator%2Fcharts%2Flegator)
           files: |
-            /tmp/helm-packages/infraagent-${{ steps.version.outputs.version }}.tgz
+            /tmp/helm-packages/legator-${{ steps.version.outputs.version }}.tgz
           generate_release_notes: true
           make_latest: true
 
@@ -218,7 +218,7 @@ jobs:
       - name: Create kind cluster
         uses: helm/kind-action@v1
         with:
-          cluster_name: infraagent-smoke
+          cluster_name: legator-smoke
 
       - name: Install CRDs
         run: make install
@@ -228,8 +228,8 @@ jobs:
 
       - name: Install operator via Helm
         run: |
-          helm install infraagent charts/infraagent/ \
-            --namespace infraagent-system --create-namespace \
+          helm install legator charts/legator/ \
+            --namespace legator-system --create-namespace \
             --set image.repository=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }} \
             --set image.tag=${{ github.ref_name }} \
             --set leaderElection.enabled=false \
@@ -237,9 +237,9 @@ jobs:
 
       - name: Verify controller running
         run: |
-          kubectl get pods -n infraagent-system
-          kubectl wait --for=condition=Ready pod -l app.kubernetes.io/name=infraagent \
-            -n infraagent-system --timeout=60s
+          kubectl get pods -n legator-system
+          kubectl wait --for=condition=Ready pod -l app.kubernetes.io/name=legator \
+            -n legator-system --timeout=60s
 
       - name: Apply example agent
         run: |
@@ -254,18 +254,18 @@ jobs:
       - name: Verify agent reaches Ready
         run: |
           sleep 5
-          kubectl get infraagents -n agents
-          PHASE=$(kubectl get infraagent watchman-light -n agents -o jsonpath='{.status.phase}')
+          kubectl get legators -n agents
+          PHASE=$(kubectl get legator watchman-light -n agents -o jsonpath='{.status.phase}')
           if [ "$PHASE" != "Ready" ] && [ "$PHASE" != "Pending" ]; then
             echo "ERROR: Agent phase is '$PHASE', expected Ready or Pending"
-            kubectl describe infraagent watchman-light -n agents
+            kubectl describe legator watchman-light -n agents
             exit 1
           fi
           echo "✅ Agent phase: $PHASE"
 
       - name: Verify CRDs registered
         run: |
-          for crd in infraagents.core.infraagent.io agentenvironments.core.infraagent.io modeltierconfigs.core.infraagent.io agentruns.core.infraagent.io; do
+          for crd in legators.legator.io agentenvironments.legator.io modeltierconfigs.legator.io agentruns.legator.io; do
             kubectl get crd "$crd" || (echo "CRD $crd not found" && exit 1)
           done
           echo "✅ All 4 CRDs registered"

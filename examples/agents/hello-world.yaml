@@ -1,7 +1,7 @@
-# The simplest possible InfraAgent.
+# The simplest possible LegatorAgent.
 # Runs every 10 minutes, observes the cluster, reports what it sees.
-apiVersion: core.infraagent.io/v1alpha1
-kind: InfraAgent
+apiVersion: legator.io/v1alpha1
+kind: LegatorAgent
 metadata:
   name: hello-world
   namespace: agents

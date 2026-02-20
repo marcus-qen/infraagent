@@ -20,7 +20,7 @@ import (
 	"net/url"
 	"time"
 
-	corev1alpha1 "github.com/marcus-qen/infraagent/api/v1alpha1"
+	corev1alpha1 "github.com/marcus-qen/legator/api/v1alpha1"
 )
 
 // --- Slack Channel (Step 4.2) ---

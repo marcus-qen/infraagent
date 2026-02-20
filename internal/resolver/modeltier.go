@@ -16,7 +16,7 @@ import (
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	corev1alpha1 "github.com/marcus-qen/infraagent/api/v1alpha1"
+	corev1alpha1 "github.com/marcus-qen/legator/api/v1alpha1"
 )
 
 // ResolvedModel contains the resolved model details for an agent run.

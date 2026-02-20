@@ -1,4 +1,4 @@
-module github.com/marcus-qen/infraagent
+module github.com/marcus-qen/legator
 
 go 1.25.3
 

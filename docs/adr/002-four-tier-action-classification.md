@@ -26,6 +26,6 @@ Separating "destructive service changes" from "data destruction" lets operators 
 
 ## Consequences
 
-- Agents cannot automate database maintenance (backup rotation, vacuum, etc.) — this requires human action or a separate, non-InfraAgent tool
+- Agents cannot automate database maintenance (backup rotation, vacuum, etc.) — this requires human action or a separate, non-LegatorAgent tool
 - The hardcoded rules must be maintained as new resource types emerge
 - The classification is deliberately conservative — false positives are expected and acceptable

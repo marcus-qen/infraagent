@@ -43,20 +43,20 @@ import (
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
-	corev1alpha1 "github.com/marcus-qen/infraagent/api/v1alpha1"
-	"github.com/marcus-qen/infraagent/internal/assembler"
-	"github.com/marcus-qen/infraagent/internal/controller"
-	"github.com/marcus-qen/infraagent/internal/lifecycle"
-	_ "github.com/marcus-qen/infraagent/internal/metrics" // Register Prometheus metrics
-	"github.com/marcus-qen/infraagent/internal/multicluster"
-	"github.com/marcus-qen/infraagent/internal/provider"
-	"github.com/marcus-qen/infraagent/internal/ratelimit"
-	"github.com/marcus-qen/infraagent/internal/resolver"
-	"github.com/marcus-qen/infraagent/internal/retention"
-	"github.com/marcus-qen/infraagent/internal/runner"
-	"github.com/marcus-qen/infraagent/internal/scheduler"
-	"github.com/marcus-qen/infraagent/internal/telemetry"
-	"github.com/marcus-qen/infraagent/internal/tools"
+	corev1alpha1 "github.com/marcus-qen/legator/api/v1alpha1"
+	"github.com/marcus-qen/legator/internal/assembler"
+	"github.com/marcus-qen/legator/internal/controller"
+	"github.com/marcus-qen/legator/internal/lifecycle"
+	_ "github.com/marcus-qen/legator/internal/metrics" // Register Prometheus metrics
+	"github.com/marcus-qen/legator/internal/multicluster"
+	"github.com/marcus-qen/legator/internal/provider"
+	"github.com/marcus-qen/legator/internal/ratelimit"
+	"github.com/marcus-qen/legator/internal/resolver"
+	"github.com/marcus-qen/legator/internal/retention"
+	"github.com/marcus-qen/legator/internal/runner"
+	"github.com/marcus-qen/legator/internal/scheduler"
+	"github.com/marcus-qen/legator/internal/telemetry"
+	"github.com/marcus-qen/legator/internal/tools"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -111,11 +111,11 @@ func main() {
 		"OTLP gRPC endpoint for tracing (e.g. tempo:4317). Empty disables tracing. "+
 			"Also configurable via OTEL_EXPORTER_OTLP_ENDPOINT env var.")
 	flag.StringVar(&retentionTTL, "retention-ttl", "168h",
-		"How long to keep completed AgentRuns (e.g. 168h for 7 days). Set to 0 to disable retention.")
+		"How long to keep completed LegatorRuns (e.g. 168h for 7 days). Set to 0 to disable retention.")
 	flag.StringVar(&retentionScanInterval, "retention-scan-interval", "1h",
-		"How often to scan for expired AgentRuns.")
+		"How often to scan for expired LegatorRuns.")
 	flag.IntVar(&retentionMaxBatch, "retention-max-batch", 100,
-		"Maximum AgentRuns to delete per scan.")
+		"Maximum LegatorRuns to delete per scan.")
 	flag.IntVar(&retentionPreserveMin, "retention-preserve-min", 5,
 		"Keep at least this many runs per agent regardless of TTL.")
 	flag.StringVar(&drainTimeout, "drain-timeout", "30s",
@@ -227,7 +227,7 @@ func main() {
 		WebhookServer:          webhookServer,
 		HealthProbeBindAddress: probeAddr,
 		LeaderElection:         enableLeaderElection,
-		LeaderElectionID:       "b3aef6a8.infraagent.io",
+		LeaderElectionID:       "b3aef6a8.legator.io",
 		// LeaderElectionReleaseOnCancel defines if the leader should step down voluntarily
 		// when the Manager ends. This requires the binary to immediately end when the
 		// Manager is stopped, otherwise, this setting is unsafe. Setting this significantly
@@ -313,7 +313,7 @@ func main() {
 	shutdownMgr := lifecycle.NewShutdownManager(sched.RunTrackerRef(), drainDur, ctrl.Log)
 
 	// Provider factory: resolves model tier → LLM provider with API key from Secret
-	providerFactory := func(agent *corev1alpha1.InfraAgent, mtc *corev1alpha1.ModelTierConfig) (provider.Provider, error) {
+	providerFactory := func(agent *corev1alpha1.LegatorAgent, mtc *corev1alpha1.ModelTierConfig) (provider.Provider, error) {
 		// Look up the ModelTierConfig if not provided
 		if mtc == nil {
 			mtc = &corev1alpha1.ModelTierConfig{}
@@ -368,7 +368,7 @@ func main() {
 	}
 
 	// Tool registry factory: builds tools for an agent
-	toolRegistryFactory := func(agent *corev1alpha1.InfraAgent, env *resolver.ResolvedEnvironment) (*tools.Registry, error) {
+	toolRegistryFactory := func(agent *corev1alpha1.LegatorAgent, env *resolver.ResolvedEnvironment) (*tools.Registry, error) {
 		reg := tools.NewRegistry()
 		// Build credential store for HTTP tools from resolved environment
 		var credStore *tools.HTTPCredentialStore
@@ -417,7 +417,7 @@ func main() {
 	}
 
 	// Wire RunConfigFactory into scheduler so scheduled runs get providers + tools
-	sched.RunConfigFactory = func(agent *corev1alpha1.InfraAgent) (runner.RunConfig, error) {
+	sched.RunConfigFactory = func(agent *corev1alpha1.LegatorAgent) (runner.RunConfig, error) {
 		cfg := runner.RunConfig{}
 		p, err := providerFactory(agent, nil)
 		if err != nil {
@@ -443,28 +443,28 @@ func main() {
 	_ = clientFactory
 	_ = shutdownMgr
 
-	if err := (&controller.InfraAgentReconciler{
+	if err := (&controller.LegatorAgentReconciler{
 		Client:              mgr.GetClient(),
 		Scheme:              mgr.GetScheme(),
 		Runner:              agentRunner,
 		ProviderFactory:     providerFactory,
 		ToolRegistryFactory: toolRegistryFactory,
 	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "Failed to create controller", "controller", "InfraAgent")
+		setupLog.Error(err, "Failed to create controller", "controller", "LegatorAgent")
 		os.Exit(1)
 	}
-	if err := (&controller.AgentEnvironmentReconciler{
+	if err := (&controller.LegatorEnvironmentReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "Failed to create controller", "controller", "AgentEnvironment")
+		setupLog.Error(err, "Failed to create controller", "controller", "LegatorEnvironment")
 		os.Exit(1)
 	}
-	if err := (&controller.AgentRunReconciler{
+	if err := (&controller.LegatorRunReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "Failed to create controller", "controller", "AgentRun")
+		setupLog.Error(err, "Failed to create controller", "controller", "LegatorRun")
 		os.Exit(1)
 	}
 	if err := (&controller.ModelTierConfigReconciler{

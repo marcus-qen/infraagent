@@ -1,5 +1,5 @@
-apiVersion: core.infraagent.io/v1alpha1
-kind: InfraAgent
+apiVersion: legator.io/v1alpha1
+kind: LegatorAgent
 metadata:
   name: herald
   namespace: agents
@@ -28,7 +28,7 @@ spec:
     autonomy: observe
     allowedActions:
       - "kubectl.get agentruns *"
-      - "kubectl.get infraagents *"
+      - "kubectl.get legators *"
       - "kubectl.get pods *"
       - "github.issue.list *"
     maxIterations: 5

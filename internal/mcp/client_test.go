@@ -18,8 +18,8 @@ import (
 	"github.com/go-logr/logr"
 	mcpsdk "github.com/modelcontextprotocol/go-sdk/mcp"
 
-	corev1alpha1 "github.com/marcus-qen/infraagent/api/v1alpha1"
-	"github.com/marcus-qen/infraagent/internal/tools"
+	corev1alpha1 "github.com/marcus-qen/legator/api/v1alpha1"
+	"github.com/marcus-qen/legator/internal/tools"
 )
 
 func TestNewManager(t *testing.T) {
@@ -247,7 +247,7 @@ func TestInMemoryMCPIntegration(t *testing.T) {
 	defer serverSession.Close()
 
 	client := mcpsdk.NewClient(
-		&mcpsdk.Implementation{Name: "infraagent", Version: "v0.1.0"},
+		&mcpsdk.Implementation{Name: "legator", Version: "v0.1.0"},
 		nil,
 	)
 	clientSession, err := client.Connect(ctx, t2, nil)
@@ -328,7 +328,7 @@ func TestInMemoryMCPWithNoiseFilter(t *testing.T) {
 	defer serverSession.Close()
 
 	client := mcpsdk.NewClient(
-		&mcpsdk.Implementation{Name: "infraagent", Version: "v0.1.0"},
+		&mcpsdk.Implementation{Name: "legator", Version: "v0.1.0"},
 		nil,
 	)
 	clientSession, err := client.Connect(ctx, t2, nil)

@@ -491,15 +491,15 @@ func resourceToGVR(resource string) schema.GroupVersionResource {
 		return schema.GroupVersionResource{Group: "argoproj.io", Version: "v1alpha1", Resource: "applications"}
 	case "appprojects", "appproject":
 		return schema.GroupVersionResource{Group: "argoproj.io", Version: "v1alpha1", Resource: "appprojects"}
-	// InfraAgent CRDs
-	case "infraagent", "infraagents":
-		return schema.GroupVersionResource{Group: "core.infraagent.io", Version: "v1alpha1", Resource: "infraagents"}
-	case "agentrun", "agentruns":
-		return schema.GroupVersionResource{Group: "core.infraagent.io", Version: "v1alpha1", Resource: "agentruns"}
-	case "agentenvironment", "agentenvironments":
-		return schema.GroupVersionResource{Group: "core.infraagent.io", Version: "v1alpha1", Resource: "agentenvironments"}
+	// Legator CRDs
+	case "legatoragent", "legatoragents":
+		return schema.GroupVersionResource{Group: "legator.io", Version: "v1alpha1", Resource: "legatoragents"}
+	case "legatorrun", "legatorruns":
+		return schema.GroupVersionResource{Group: "legator.io", Version: "v1alpha1", Resource: "legatorruns"}
+	case "legatorenvironment", "legatorenvironments":
+		return schema.GroupVersionResource{Group: "legator.io", Version: "v1alpha1", Resource: "legatorenvironments"}
 	case "modeltierconfig", "modeltierconfigs":
-		return schema.GroupVersionResource{Group: "core.infraagent.io", Version: "v1alpha1", Resource: "modeltierconfigs"}
+		return schema.GroupVersionResource{Group: "legator.io", Version: "v1alpha1", Resource: "modeltierconfigs"}
 	// CNPG
 	case "clusters", "cluster", "clusters.postgresql.cnpg.io", "cluster.postgresql.cnpg.io":
 		return schema.GroupVersionResource{Group: "postgresql.cnpg.io", Version: "v1", Resource: "clusters"}

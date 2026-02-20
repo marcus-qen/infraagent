@@ -1,6 +1,6 @@
 # Model Tier Configuration
 
-InfraAgent uses **tiers, not model names**. Agent specs declare `tier: fast` or `tier: reasoning` — the runtime maps this to actual provider/model strings via the ModelTierConfig CRD.
+LegatorAgent uses **tiers, not model names**. Agent specs declare `tier: fast` or `tier: reasoning` — the runtime maps this to actual provider/model strings via the ModelTierConfig CRD.
 
 ## Why Tiers?
 
@@ -12,7 +12,7 @@ InfraAgent uses **tiers, not model names**. Agent specs declare `tier: fast` or 
 ## Configuration
 
 ```yaml
-apiVersion: core.infraagent.io/v1alpha1
+apiVersion: core.legator.io/v1alpha1
 kind: ModelTierConfig
 metadata:
   name: default
@@ -73,7 +73,7 @@ tiers:
 
 ## Cost Estimation
 
-The `costPerMillionInput` and `costPerMillionOutput` fields enable per-run cost estimation in AgentRun records and reports:
+The `costPerMillionInput` and `costPerMillionOutput` fields enable per-run cost estimation in LegatorRun records and reports:
 
 ```yaml
 status:

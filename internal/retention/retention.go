@@ -8,14 +8,14 @@ You may obtain a copy of the License at
     http://www.apache.org/licenses/LICENSE-2.0
 */
 
-// Package retention provides automatic cleanup of old AgentRun CRs.
+// Package retention provides automatic cleanup of old LegatorRun CRs.
 // It runs as a manager.Runnable inside the controller-runtime manager,
-// periodically scanning for AgentRuns past their TTL and deleting them.
+// periodically scanning for LegatorRuns past their TTL and deleting them.
 //
 // Configuration:
-//   - TTL: How long to keep completed AgentRuns (default 7 days)
+//   - TTL: How long to keep completed LegatorRuns (default 7 days)
 //   - ScanInterval: How often to check (default 1 hour)
-//   - MaxDeleteBatch: Max AgentRuns to delete per scan (default 100)
+//   - MaxDeleteBatch: Max LegatorRuns to delete per scan (default 100)
 //   - PreserveMinPerAgent: Keep at least N runs per agent regardless of TTL
 package retention
 
@@ -28,18 +28,18 @@ import (
 	"github.com/go-logr/logr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	corev1alpha1 "github.com/marcus-qen/infraagent/api/v1alpha1"
+	corev1alpha1 "github.com/marcus-qen/legator/api/v1alpha1"
 )
 
 // Config configures the retention controller.
 type Config struct {
-	// TTL is how long completed AgentRuns are retained.
+	// TTL is how long completed LegatorRuns are retained.
 	TTL time.Duration
 
 	// ScanInterval is how often the cleaner runs.
 	ScanInterval time.Duration
 
-	// MaxDeleteBatch is the maximum number of AgentRuns to delete per scan.
+	// MaxDeleteBatch is the maximum number of LegatorRuns to delete per scan.
 	MaxDeleteBatch int
 
 	// PreserveMinPerAgent keeps at least this many runs per agent, even if older than TTL.
@@ -56,7 +56,7 @@ func DefaultConfig() Config {
 	}
 }
 
-// Controller cleans up old AgentRun CRs.
+// Controller cleans up old LegatorRun CRs.
 type Controller struct {
 	client client.Client
 	config Config
@@ -101,7 +101,7 @@ func (c *Controller) Start(ctx context.Context) error {
 }
 
 // NeedLeaderElection implements manager.LeaderElectionRunnable.
-// Only the leader should clean up AgentRuns.
+// Only the leader should clean up LegatorRuns.
 func (c *Controller) NeedLeaderElection() bool {
 	return true
 }
@@ -114,7 +114,7 @@ type ScanResult struct {
 	Errors   int
 }
 
-// scan lists all AgentRuns and deletes those past TTL.
+// scan lists all LegatorRuns and deletes those past TTL.
 func (c *Controller) scan(ctx context.Context) {
 	result := c.doScan(ctx)
 
@@ -136,10 +136,10 @@ func (c *Controller) scan(ctx context.Context) {
 func (c *Controller) doScan(ctx context.Context) ScanResult {
 	var result ScanResult
 
-	// List all AgentRuns across all namespaces
-	runList := &corev1alpha1.AgentRunList{}
+	// List all LegatorRuns across all namespaces
+	runList := &corev1alpha1.LegatorRunList{}
 	if err := c.client.List(ctx, runList); err != nil {
-		c.log.Error(err, "Failed to list AgentRuns for retention scan")
+		c.log.Error(err, "Failed to list LegatorRuns for retention scan")
 		result.Errors++
 		return result
 	}
@@ -149,7 +149,7 @@ func (c *Controller) doScan(ctx context.Context) ScanResult {
 	cutoff := now.Add(-c.config.TTL)
 
 	// Group runs by agent for PreserveMinPerAgent
-	byAgent := make(map[string][]*corev1alpha1.AgentRun)
+	byAgent := make(map[string][]*corev1alpha1.LegatorRun)
 	for i := range runList.Items {
 		run := &runList.Items[i]
 		agentKey := fmt.Sprintf("%s/%s", run.Namespace, run.Spec.AgentRef)
@@ -164,7 +164,7 @@ func (c *Controller) doScan(ctx context.Context) ScanResult {
 	}
 
 	// Identify eligible runs
-	var toDelete []*corev1alpha1.AgentRun
+	var toDelete []*corev1alpha1.LegatorRun
 	for _, runs := range byAgent {
 		for i, run := range runs {
 			// Skip non-terminal runs
@@ -199,7 +199,7 @@ func (c *Controller) doScan(ctx context.Context) ScanResult {
 	// Delete eligible runs
 	for _, run := range toDelete {
 		if err := c.client.Delete(ctx, run); err != nil {
-			c.log.Error(err, "Failed to delete expired AgentRun",
+			c.log.Error(err, "Failed to delete expired LegatorRun",
 				"agentRun", run.Name,
 				"namespace", run.Namespace,
 				"agent", run.Spec.AgentRef,

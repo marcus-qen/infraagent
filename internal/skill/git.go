@@ -25,7 +25,7 @@ import (
 //
 // Examples:
 //
-//	git://github.com/marcus-qen/infraagent-skills#watchman-light@v1.0.0
+//	git://github.com/marcus-qen/legator-skills#watchman-light@v1.0.0
 //	git://github.com/org/repo#skills/monitoring@main
 //	git://github.com/org/repo#skills/monitoring  (default ref: HEAD)
 type GitSource struct {
@@ -86,7 +86,7 @@ func (l *Loader) loadFromGit(ctx context.Context, name, source string) (*Skill, 
 	}
 
 	// Create temp dir for clone
-	tmpDir, err := os.MkdirTemp("", "infraagent-skill-*")
+	tmpDir, err := os.MkdirTemp("", "legator-skill-*")
 	if err != nil {
 		return nil, fmt.Errorf("create temp dir: %w", err)
 	}

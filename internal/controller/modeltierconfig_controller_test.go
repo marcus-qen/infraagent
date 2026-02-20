@@ -27,7 +27,7 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	corev1alpha1 "github.com/marcus-qen/infraagent/api/v1alpha1"
+	corev1alpha1 "github.com/marcus-qen/legator/api/v1alpha1"
 )
 
 var _ = Describe("ModelTierConfig Controller", func() {

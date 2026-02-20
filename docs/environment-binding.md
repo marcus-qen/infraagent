@@ -1,12 +1,12 @@
 # Environment Binding
 
-The AgentEnvironment CRD is what makes agents portable. The same InfraAgent + Skills can manage completely different clusters by binding to different environments.
+The LegatorEnvironment CRD is what makes agents portable. The same LegatorAgent + Skills can manage completely different clusters by binding to different environments.
 
 ## Concept
 
 ```
 ┌─────────────────┐     ┌──────────────────┐     ┌──────────────────┐
-│   InfraAgent    │     │      Skill       │     │ AgentEnvironment │
+│   LegatorAgent    │     │      Skill       │     │ LegatorEnvironment │
 │  (what/when)    │──→  │  (expertise)     │  +  │  (where/how)     │
 │                 │     │                  │     │                  │
 │ watchman-light  │     │ endpoint-monitor │     │ dev-lab          │
@@ -104,7 +104,7 @@ spec:
       type: basic-auth
 ```
 
-> **Credential hygiene:** The runtime sanitizes all tool output before recording it in AgentRun audit trails. Secrets are never stored in CR status fields.
+> **Credential hygiene:** The runtime sanitizes all tool output before recording it in LegatorRun audit trails. Secrets are never stored in CR status fields.
 
 ## Channels
 

@@ -17,7 +17,7 @@ import (
 
 	"github.com/go-logr/logr"
 
-	corev1alpha1 "github.com/marcus-qen/infraagent/api/v1alpha1"
+	corev1alpha1 "github.com/marcus-qen/legator/api/v1alpha1"
 )
 
 // EscalationEngine handles autonomy-ceiling escalations.
@@ -39,10 +39,10 @@ func NewEscalationEngine(reporter *Reporter, log logr.Logger) *EscalationEngine 
 
 // EscalationRequest describes what needs to be escalated.
 type EscalationRequest struct {
-	// Agent is the InfraAgent that hit the escalation.
-	Agent *corev1alpha1.InfraAgent
+	// Agent is the LegatorAgent that hit the escalation.
+	Agent *corev1alpha1.LegatorAgent
 
-	// RunName is the AgentRun that triggered the escalation.
+	// RunName is the LegatorRun that triggered the escalation.
 	RunName string
 
 	// BlockedAction is what the agent tried to do.

@@ -1,8 +1,8 @@
-apiVersion: core.infraagent.io/v1alpha1
+apiVersion: legator.io/v1alpha1
 kind: ModelTierConfig
 metadata:
   labels:
-    app.kubernetes.io/name: infraagent
+    app.kubernetes.io/name: legator
     app.kubernetes.io/managed-by: kustomize
   name: modeltierconfig-sample
 spec:

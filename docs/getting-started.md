@@ -11,26 +11,26 @@ Get an autonomous infrastructure agent running on your cluster in 10 minutes.
 ## 1. Install the Operator
 
 ```bash
-helm install infraagent oci://ghcr.io/marcus-qen/infraagent/charts/infraagent \
-  -n infraagent-system --create-namespace \
+helm install legator oci://ghcr.io/marcus-qen/legator/charts/legator \
+  -n legator-system --create-namespace \
   --set leaderElection.enabled=true
 ```
 
 Or from a local checkout:
 
 ```bash
-git clone https://github.com/marcus-qen/infraagent.git
-cd infraagent
-helm install infraagent charts/infraagent/ \
-  -n infraagent-system --create-namespace
+git clone https://github.com/marcus-qen/legator.git
+cd legator
+helm install legator charts/legator/ \
+  -n legator-system --create-namespace
 ```
 
 Verify the controller is running:
 
 ```bash
-kubectl get pods -n infraagent-system
+kubectl get pods -n legator-system
 # NAME                                          READY   STATUS    AGE
-# infraagent-controller-xxxxx-yyyyy             1/1     Running   30s
+# legator-controller-xxxxx-yyyyy             1/1     Running   30s
 ```
 
 ## 2. Configure Model Access
@@ -48,7 +48,7 @@ Apply a ModelTierConfig that maps tier names to providers:
 
 ```yaml
 # model-tier-config.yaml
-apiVersion: core.infraagent.io/v1alpha1
+apiVersion: core.legator.io/v1alpha1
 kind: ModelTierConfig
 metadata:
   name: default
@@ -78,12 +78,12 @@ kubectl apply -f model-tier-config.yaml
 
 ## 3. Create an Environment
 
-The AgentEnvironment tells agents about your cluster — what endpoints exist, where data lives, and how to report findings:
+The LegatorEnvironment tells agents about your cluster — what endpoints exist, where data lives, and how to report findings:
 
 ```yaml
 # environment.yaml
-apiVersion: core.infraagent.io/v1alpha1
-kind: AgentEnvironment
+apiVersion: core.legator.io/v1alpha1
+kind: LegatorEnvironment
 metadata:
   name: my-cluster
   namespace: agents
@@ -117,8 +117,8 @@ Here's a simple monitoring agent that checks endpoint health every 5 minutes:
 
 ```yaml
 # watchman.yaml
-apiVersion: core.infraagent.io/v1alpha1
-kind: InfraAgent
+apiVersion: core.legator.io/v1alpha1
+kind: LegatorAgent
 metadata:
   name: watchman
   namespace: agents
@@ -153,7 +153,7 @@ kubectl apply -f watchman.yaml -n agents
 Check the agent status:
 
 ```bash
-kubectl get infraagents -n agents
+kubectl get legators -n agents
 # NAME       PHASE   AUTONOMY   SCHEDULE      LAST RUN   RUNS   AGE
 # watchman   Ready   observe    */5 * * * *                0     10s
 ```
@@ -161,11 +161,11 @@ kubectl get infraagents -n agents
 Trigger a manual run:
 
 ```bash
-kubectl annotate infraagent watchman \
-  infraagent.io/run-now=true -n agents
+kubectl annotate legator watchman \
+  legator.io/run-now=true -n agents
 ```
 
-Watch the AgentRun:
+Watch the LegatorRun:
 
 ```bash
 kubectl get agentruns -n agents -w
@@ -185,7 +185,7 @@ kubectl describe agentrun watchman-abc123 -n agents
 2. It called the LLM (Haiku, configured as "fast" tier)
 3. The LLM requested tool calls (HTTP health checks, kubectl queries)
 4. Each tool call was evaluated by the guardrail engine before execution
-5. Results were recorded in an immutable AgentRun CR
+5. Results were recorded in an immutable LegatorRun CR
 6. The run completed and findings were reported via configured channels
 
 ## Next Steps

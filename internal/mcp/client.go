@@ -9,8 +9,8 @@ You may obtain a copy of the License at
 */
 
 // Package mcp provides the MCP (Model Context Protocol) client integration
-// for InfraAgent. It connects to external MCP tool servers, discovers their
-// tools, and bridges them into the InfraAgent tool registry so the engine
+// for LegatorAgent. It connects to external MCP tool servers, discovers their
+// tools, and bridges them into the LegatorAgent tool registry so the engine
 // and runner can use them like any built-in tool.
 //
 // Transport modes supported:
@@ -32,8 +32,8 @@ import (
 	"github.com/go-logr/logr"
 	mcpsdk "github.com/modelcontextprotocol/go-sdk/mcp"
 
-	corev1alpha1 "github.com/marcus-qen/infraagent/api/v1alpha1"
-	"github.com/marcus-qen/infraagent/internal/tools"
+	corev1alpha1 "github.com/marcus-qen/legator/api/v1alpha1"
+	"github.com/marcus-qen/legator/internal/tools"
 )
 
 // ServerConnection represents a live connection to an MCP server.
@@ -44,7 +44,7 @@ type ServerConnection struct {
 	// Endpoint is the URL of the MCP server.
 	Endpoint string
 
-	// Capabilities are the declared capabilities (from AgentEnvironment).
+	// Capabilities are the declared capabilities (from LegatorEnvironment).
 	Capabilities []string
 
 	// Session is the active MCP client session.
@@ -61,7 +61,7 @@ type ServerConnection struct {
 }
 
 // Manager manages connections to multiple MCP servers.
-// It reads server specs from the AgentEnvironment, connects to each,
+// It reads server specs from the LegatorEnvironment, connects to each,
 // discovers tools, and registers them with the tool registry.
 type Manager struct {
 	log         logr.Logger
@@ -86,7 +86,7 @@ func NewManager(log logr.Logger) *Manager {
 		log: log.WithName("mcp"),
 		client: mcpsdk.NewClient(
 			&mcpsdk.Implementation{
-				Name:    "infraagent",
+				Name:    "legator",
 				Version: "0.1.0",
 			},
 			nil,
@@ -250,7 +250,7 @@ func (m *Manager) ServerNames() []string {
 
 // --- MCP Tool Bridge ---
 
-// MCPTool bridges an MCP server tool into the InfraAgent tool registry.
+// MCPTool bridges an MCP server tool into the LegatorAgent tool registry.
 // It implements the tools.Tool interface.
 type MCPTool struct {
 	serverName   string

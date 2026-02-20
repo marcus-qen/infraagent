@@ -64,18 +64,18 @@ func TestStartRunSpan(t *testing.T) {
 	foundAgent := false
 	foundTrigger := false
 	for _, a := range attrs {
-		if string(a.Key) == "infraagent.agent" && a.Value.AsString() == "watchman-light" {
+		if string(a.Key) == "legator.agent" && a.Value.AsString() == "watchman-light" {
 			foundAgent = true
 		}
-		if string(a.Key) == "infraagent.trigger" && a.Value.AsString() == "scheduled" {
+		if string(a.Key) == "legator.trigger" && a.Value.AsString() == "scheduled" {
 			foundTrigger = true
 		}
 	}
 	if !foundAgent {
-		t.Error("missing infraagent.agent attribute")
+		t.Error("missing legator.agent attribute")
 	}
 	if !foundTrigger {
-		t.Error("missing infraagent.trigger attribute")
+		t.Error("missing legator.trigger attribute")
 	}
 }
 
@@ -153,18 +153,18 @@ func TestToolCallSpanBlocked(t *testing.T) {
 	foundBlocked := false
 	foundReason := false
 	for _, a := range attrs {
-		if string(a.Key) == "infraagent.blocked" && a.Value.AsBool() {
+		if string(a.Key) == "legator.blocked" && a.Value.AsBool() {
 			foundBlocked = true
 		}
-		if string(a.Key) == "infraagent.block_reason" && a.Value.AsString() == "data protection" {
+		if string(a.Key) == "legator.block_reason" && a.Value.AsString() == "data protection" {
 			foundReason = true
 		}
 	}
 	if !foundBlocked {
-		t.Error("missing infraagent.blocked attribute")
+		t.Error("missing legator.blocked attribute")
 	}
 	if !foundReason {
-		t.Error("missing infraagent.block_reason attribute")
+		t.Error("missing legator.block_reason attribute")
 	}
 }
 

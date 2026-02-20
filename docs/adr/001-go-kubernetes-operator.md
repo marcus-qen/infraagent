@@ -17,7 +17,7 @@ Go + kubebuilder Kubernetes operator.
 ## Rationale
 
 - **Native K8s integration**: CRDs for agent definitions, controller-runtime for lifecycle management, leader election for HA
-- **Single binary**: `helm install infraagent` — one chart, one deployment
+- **Single binary**: `helm install legator` — one chart, one deployment
 - **Performance**: Go's concurrency model suits scheduling many agents
 - **Ecosystem**: kubebuilder/controller-runtime is the standard for K8s operators
 - **Type safety**: Go structs for CRDs catch schema errors at compile time

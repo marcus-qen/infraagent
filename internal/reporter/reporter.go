@@ -12,7 +12,7 @@ You may obtain a copy of the License at
 // notification channels (Slack, Telegram, generic webhook).
 //
 // The reporter is called by the runner after each run completes.
-// It resolves channel names from the AgentEnvironment, formats
+// It resolves channel names from the LegatorEnvironment, formats
 // the message using templates, and delivers via the appropriate transport.
 package reporter
 
@@ -24,8 +24,8 @@ import (
 
 	"github.com/go-logr/logr"
 
-	corev1alpha1 "github.com/marcus-qen/infraagent/api/v1alpha1"
-	"github.com/marcus-qen/infraagent/internal/resolver"
+	corev1alpha1 "github.com/marcus-qen/legator/api/v1alpha1"
+	"github.com/marcus-qen/legator/internal/resolver"
 )
 
 // Severity classifies the urgency of a report.
@@ -47,7 +47,7 @@ type Report struct {
 	// Emoji is the agent's emoji.
 	Emoji string
 
-	// RunName is the AgentRun CR name.
+	// RunName is the LegatorRun CR name.
 	RunName string
 
 	// Severity classifies the urgency.
@@ -176,10 +176,10 @@ func newChannelFromSpec(name string, spec corev1alpha1.ChannelSpec) (Channel, er
 	}
 }
 
-// --- Report building from AgentRun ---
+// --- Report building from LegatorRun ---
 
-// FromAgentRun creates a Report from a completed AgentRun.
-func FromAgentRun(agent *corev1alpha1.InfraAgent, run *corev1alpha1.AgentRun) *Report {
+// FromLegatorRun creates a Report from a completed LegatorRun.
+func FromLegatorRun(agent *corev1alpha1.LegatorAgent, run *corev1alpha1.LegatorRun) *Report {
 	emoji := agent.Spec.Emoji
 	if emoji == "" {
 		emoji = "🤖"
@@ -220,7 +220,7 @@ func FromAgentRun(agent *corev1alpha1.InfraAgent, run *corev1alpha1.AgentRun) *R
 
 // ShouldReport determines whether a report should be sent based on
 // the agent's reporting config and the run outcome.
-func ShouldReport(reporting *corev1alpha1.ReportingSpec, run *corev1alpha1.AgentRun) (bool, corev1alpha1.ReportAction) {
+func ShouldReport(reporting *corev1alpha1.ReportingSpec, run *corev1alpha1.LegatorRun) (bool, corev1alpha1.ReportAction) {
 	if reporting == nil {
 		reporting = &corev1alpha1.ReportingSpec{
 			OnSuccess: corev1alpha1.ReportSilent,

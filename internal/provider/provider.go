@@ -9,7 +9,7 @@ You may obtain a copy of the License at
 */
 
 // Package provider defines the LLM provider abstraction and implementations.
-// Each provider translates between the InfraAgent tool-use protocol and
+// Each provider translates between the LegatorAgent tool-use protocol and
 // a specific LLM API (Anthropic, OpenAI-compatible, etc.).
 package provider
 

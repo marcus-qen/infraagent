@@ -1,5 +1,5 @@
-apiVersion: core.infraagent.io/v1alpha1
-kind: InfraAgent
+apiVersion: legator.io/v1alpha1
+kind: LegatorAgent
 metadata:
   name: promotion
   namespace: agents

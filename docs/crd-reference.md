@@ -1,10 +1,10 @@
 # CRD Reference
 
-Complete field reference for all InfraAgent Custom Resource Definitions.
+Complete field reference for all LegatorAgent Custom Resource Definitions.
 
-## InfraAgent
+## LegatorAgent
 
-**API Group:** `core.infraagent.io/v1alpha1`
+**API Group:** `core.legator.io/v1alpha1`
 **Scope:** Namespaced
 
 Defines an autonomous infrastructure agent — its identity, schedule, model configuration, skills, capabilities, guardrails, and environment binding.
@@ -22,7 +22,7 @@ Defines an autonomous infrastructure agent — its identity, schedule, model con
 | `guardrails` | [GuardrailsSpec](#guardrailsspec) | ✅ | — | Safety boundaries and escalation |
 | `observability` | [ObservabilitySpec](#observabilityspec) | | metrics+tracing on | Telemetry configuration |
 | `reporting` | [ReportingSpec](#reportingspec) | | success=silent | Run outcome actions |
-| `environmentRef` | string | ✅ | — | Name of AgentEnvironment to bind |
+| `environmentRef` | string | ✅ | — | Name of LegatorEnvironment to bind |
 | `paused` | bool | | false | Stops scheduling without deleting |
 
 ### ScheduleSpec
@@ -82,7 +82,7 @@ Defines an autonomous infrastructure agent — its identity, schedule, model con
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
 | `target` | enum | — | `parent`, `channel`, `human` |
-| `channelName` | string | — | Named channel in AgentEnvironment |
+| `channelName` | string | — | Named channel in LegatorEnvironment |
 | `timeout` | string | `300s` | Wait time for response |
 | `onTimeout` | enum | `cancel` | `cancel`, `proceed`, `retry` |
 
@@ -111,14 +111,14 @@ Defines an autonomous infrastructure agent — its identity, schedule, model con
 | `nextRunTime` | time | Computed next execution time |
 | `runCount` | int64 | Total runs |
 | `consecutiveFailures` | int32 | Sequential failures (for alerting) |
-| `lastRunName` | string | Name of most recent AgentRun |
+| `lastRunName` | string | Name of most recent LegatorRun |
 | `conditions` | []Condition | Standard K8s conditions |
 
 ---
 
-## AgentEnvironment
+## LegatorEnvironment
 
-**API Group:** `core.infraagent.io/v1alpha1`
+**API Group:** `core.legator.io/v1alpha1`
 **Scope:** Namespaced
 
 Site-specific configuration — endpoints, credentials, namespaces, channels, data resources, and MCP servers.
@@ -218,7 +218,7 @@ Site-specific configuration — endpoints, credentials, namespaces, channels, da
 
 ## ModelTierConfig
 
-**API Group:** `core.infraagent.io/v1alpha1`
+**API Group:** `core.legator.io/v1alpha1`
 **Scope:** Cluster
 
 Maps tier names to provider/model strings and auth configuration.
@@ -252,9 +252,9 @@ Maps tier names to provider/model strings and auth configuration.
 
 ---
 
-## AgentRun
+## LegatorRun
 
-**API Group:** `core.infraagent.io/v1alpha1`
+**API Group:** `core.legator.io/v1alpha1`
 **Scope:** Namespaced
 
 Immutable audit record of a single agent execution. Once phase reaches a terminal state, no field is ever modified.
@@ -263,8 +263,8 @@ Immutable audit record of a single agent execution. Once phase reaches a termina
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `agentRef` | string | Owning InfraAgent name |
-| `environmentRef` | string | AgentEnvironment used |
+| `agentRef` | string | Owning LegatorAgent name |
+| `environmentRef` | string | LegatorEnvironment used |
 | `trigger` | enum | `scheduled`, `webhook`, `manual` |
 | `modelUsed` | string | Resolved provider/model string |
 

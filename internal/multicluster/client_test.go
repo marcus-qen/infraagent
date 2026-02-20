@@ -19,7 +19,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
-	corev1alpha1 "github.com/marcus-qen/infraagent/api/v1alpha1"
+	corev1alpha1 "github.com/marcus-qen/legator/api/v1alpha1"
 )
 
 func newScheme() *runtime.Scheme {
@@ -35,9 +35,9 @@ func TestClientForEnvironment_InCluster(t *testing.T) {
 	factory := NewClientFactory(fc, s)
 
 	// nil connection
-	env := &corev1alpha1.AgentEnvironment{
+	env := &corev1alpha1.LegatorEnvironment{
 		ObjectMeta: metav1.ObjectMeta{Name: "env", Namespace: "default"},
-		Spec:       corev1alpha1.AgentEnvironmentSpec{},
+		Spec:       corev1alpha1.LegatorEnvironmentSpec{},
 	}
 	c, err := factory.ClientForEnvironment(context.Background(), env)
 	if err != nil {
@@ -63,9 +63,9 @@ func TestClientForEnvironment_UnsupportedKind(t *testing.T) {
 	fc := fake.NewClientBuilder().WithScheme(s).Build()
 	factory := NewClientFactory(fc, s)
 
-	env := &corev1alpha1.AgentEnvironment{
+	env := &corev1alpha1.LegatorEnvironment{
 		ObjectMeta: metav1.ObjectMeta{Name: "env", Namespace: "default"},
-		Spec: corev1alpha1.AgentEnvironmentSpec{
+		Spec: corev1alpha1.LegatorEnvironmentSpec{
 			Connection: &corev1alpha1.ConnectionSpec{Kind: "magic"},
 		},
 	}
@@ -80,9 +80,9 @@ func TestClientForEnvironment_MissingSecretRef(t *testing.T) {
 	fc := fake.NewClientBuilder().WithScheme(s).Build()
 	factory := NewClientFactory(fc, s)
 
-	env := &corev1alpha1.AgentEnvironment{
+	env := &corev1alpha1.LegatorEnvironment{
 		ObjectMeta: metav1.ObjectMeta{Name: "env", Namespace: "default"},
-		Spec: corev1alpha1.AgentEnvironmentSpec{
+		Spec: corev1alpha1.LegatorEnvironmentSpec{
 			Connection: &corev1alpha1.ConnectionSpec{
 				Kind:       "kubeconfig",
 				Kubeconfig: &corev1alpha1.KubeconfigRef{SecretRef: ""},
@@ -100,9 +100,9 @@ func TestClientForEnvironment_SecretNotFound(t *testing.T) {
 	fc := fake.NewClientBuilder().WithScheme(s).Build()
 	factory := NewClientFactory(fc, s)
 
-	env := &corev1alpha1.AgentEnvironment{
+	env := &corev1alpha1.LegatorEnvironment{
 		ObjectMeta: metav1.ObjectMeta{Name: "env", Namespace: "default"},
-		Spec: corev1alpha1.AgentEnvironmentSpec{
+		Spec: corev1alpha1.LegatorEnvironmentSpec{
 			Connection: &corev1alpha1.ConnectionSpec{
 				Kind:       "kubeconfig",
 				Kubeconfig: &corev1alpha1.KubeconfigRef{SecretRef: "nonexistent"},
@@ -124,9 +124,9 @@ func TestClientForEnvironment_SecretMissingKey(t *testing.T) {
 	fc := fake.NewClientBuilder().WithScheme(s).WithObjects(secret).Build()
 	factory := NewClientFactory(fc, s)
 
-	env := &corev1alpha1.AgentEnvironment{
+	env := &corev1alpha1.LegatorEnvironment{
 		ObjectMeta: metav1.ObjectMeta{Name: "env", Namespace: "default"},
-		Spec: corev1alpha1.AgentEnvironmentSpec{
+		Spec: corev1alpha1.LegatorEnvironmentSpec{
 			Connection: &corev1alpha1.ConnectionSpec{
 				Kind:       "kubeconfig",
 				Kubeconfig: &corev1alpha1.KubeconfigRef{SecretRef: "my-kc"},
@@ -148,9 +148,9 @@ func TestClientForEnvironment_InvalidKubeconfig(t *testing.T) {
 	fc := fake.NewClientBuilder().WithScheme(s).WithObjects(secret).Build()
 	factory := NewClientFactory(fc, s)
 
-	env := &corev1alpha1.AgentEnvironment{
+	env := &corev1alpha1.LegatorEnvironment{
 		ObjectMeta: metav1.ObjectMeta{Name: "env", Namespace: "default"},
-		Spec: corev1alpha1.AgentEnvironmentSpec{
+		Spec: corev1alpha1.LegatorEnvironmentSpec{
 			Connection: &corev1alpha1.ConnectionSpec{
 				Kind:       "kubeconfig",
 				Kubeconfig: &corev1alpha1.KubeconfigRef{SecretRef: "my-kc"},
@@ -193,9 +193,9 @@ users:
 	fc := fake.NewClientBuilder().WithScheme(s).WithObjects(secret).Build()
 	factory := NewClientFactory(fc, s)
 
-	env := &corev1alpha1.AgentEnvironment{
+	env := &corev1alpha1.LegatorEnvironment{
 		ObjectMeta: metav1.ObjectMeta{Name: "env", Namespace: "infra"},
-		Spec: corev1alpha1.AgentEnvironmentSpec{
+		Spec: corev1alpha1.LegatorEnvironmentSpec{
 			Connection: &corev1alpha1.ConnectionSpec{
 				Kind:       "kubeconfig",
 				Kubeconfig: &corev1alpha1.KubeconfigRef{SecretRef: "remote-kc"},
@@ -257,9 +257,9 @@ users:
 	fc := fake.NewClientBuilder().WithScheme(s).WithObjects(secret).Build()
 	factory := NewClientFactory(fc, s)
 
-	env := &corev1alpha1.AgentEnvironment{
+	env := &corev1alpha1.LegatorEnvironment{
 		ObjectMeta: metav1.ObjectMeta{Name: "env", Namespace: "default"},
-		Spec: corev1alpha1.AgentEnvironmentSpec{
+		Spec: corev1alpha1.LegatorEnvironmentSpec{
 			Connection: &corev1alpha1.ConnectionSpec{
 				Kind: "kubeconfig",
 				Kubeconfig: &corev1alpha1.KubeconfigRef{

@@ -14,7 +14,7 @@ import (
 	"fmt"
 	"strings"
 
-	corev1alpha1 "github.com/marcus-qen/infraagent/api/v1alpha1"
+	corev1alpha1 "github.com/marcus-qen/legator/api/v1alpha1"
 )
 
 // CapabilityCheckResult reports whether required capabilities are satisfied.

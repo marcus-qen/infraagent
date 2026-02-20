@@ -22,7 +22,7 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	corev1alpha1 "github.com/marcus-qen/infraagent/api/v1alpha1"
+	corev1alpha1 "github.com/marcus-qen/legator/api/v1alpha1"
 )
 
 func init() {
@@ -67,8 +67,8 @@ func TestNextCronRun_InvalidExpr(t *testing.T) {
 }
 
 func TestNextRun_Cron(t *testing.T) {
-	agent := &corev1alpha1.InfraAgent{
-		Spec: corev1alpha1.InfraAgentSpec{
+	agent := &corev1alpha1.LegatorAgent{
+		Spec: corev1alpha1.LegatorAgentSpec{
 			Schedule: corev1alpha1.ScheduleSpec{
 				Cron:     "*/5 * * * *",
 				Timezone: "UTC",
@@ -89,8 +89,8 @@ func TestNextRun_Cron(t *testing.T) {
 }
 
 func TestNextRun_Paused(t *testing.T) {
-	agent := &corev1alpha1.InfraAgent{
-		Spec: corev1alpha1.InfraAgentSpec{
+	agent := &corev1alpha1.LegatorAgent{
+		Spec: corev1alpha1.LegatorAgentSpec{
 			Schedule: corev1alpha1.ScheduleSpec{Cron: "*/5 * * * *"},
 			Paused:   true,
 		},
@@ -106,8 +106,8 @@ func TestNextRun_Paused(t *testing.T) {
 }
 
 func TestNextRun_Timezone(t *testing.T) {
-	agent := &corev1alpha1.InfraAgent{
-		Spec: corev1alpha1.InfraAgentSpec{
+	agent := &corev1alpha1.LegatorAgent{
+		Spec: corev1alpha1.LegatorAgentSpec{
 			Schedule: corev1alpha1.ScheduleSpec{
 				Cron:     "0 5 * * *",
 				Timezone: "America/New_York",
@@ -132,8 +132,8 @@ func TestNextRun_Timezone(t *testing.T) {
 }
 
 func TestNextRun_InvalidTimezone(t *testing.T) {
-	agent := &corev1alpha1.InfraAgent{
-		Spec: corev1alpha1.InfraAgentSpec{
+	agent := &corev1alpha1.LegatorAgent{
+		Spec: corev1alpha1.LegatorAgentSpec{
 			Schedule: corev1alpha1.ScheduleSpec{
 				Cron:     "*/5 * * * *",
 				Timezone: "Not/A/Timezone",
@@ -151,13 +151,13 @@ func TestNextRun_InvalidTimezone(t *testing.T) {
 
 func TestNextRun_Interval(t *testing.T) {
 	lastRun := time.Date(2026, 2, 19, 10, 0, 0, 0, time.UTC)
-	agent := &corev1alpha1.InfraAgent{
-		Spec: corev1alpha1.InfraAgentSpec{
+	agent := &corev1alpha1.LegatorAgent{
+		Spec: corev1alpha1.LegatorAgentSpec{
 			Schedule: corev1alpha1.ScheduleSpec{
 				Interval: "5m",
 			},
 		},
-		Status: corev1alpha1.InfraAgentStatus{
+		Status: corev1alpha1.LegatorAgentStatus{
 			LastRunTime: &metav1.Time{Time: lastRun},
 		},
 	}
@@ -175,8 +175,8 @@ func TestNextRun_Interval(t *testing.T) {
 }
 
 func TestNextRun_Interval_NeverRun(t *testing.T) {
-	agent := &corev1alpha1.InfraAgent{
-		Spec: corev1alpha1.InfraAgentSpec{
+	agent := &corev1alpha1.LegatorAgent{
+		Spec: corev1alpha1.LegatorAgentSpec{
 			Schedule: corev1alpha1.ScheduleSpec{
 				Interval: "5m",
 			},
@@ -196,8 +196,8 @@ func TestNextRun_Interval_NeverRun(t *testing.T) {
 }
 
 func TestNextRun_InvalidInterval(t *testing.T) {
-	agent := &corev1alpha1.InfraAgent{
-		Spec: corev1alpha1.InfraAgentSpec{
+	agent := &corev1alpha1.LegatorAgent{
+		Spec: corev1alpha1.LegatorAgentSpec{
 			Schedule: corev1alpha1.ScheduleSpec{
 				Interval: "not-a-duration",
 			},
@@ -211,8 +211,8 @@ func TestNextRun_InvalidInterval(t *testing.T) {
 }
 
 func TestNextRun_TriggerOnly(t *testing.T) {
-	agent := &corev1alpha1.InfraAgent{
-		Spec: corev1alpha1.InfraAgentSpec{
+	agent := &corev1alpha1.LegatorAgent{
+		Spec: corev1alpha1.LegatorAgentSpec{
 			Schedule: corev1alpha1.ScheduleSpec{
 				Triggers: []corev1alpha1.TriggerSpec{
 					{Type: corev1alpha1.TriggerWebhook, Source: "alertmanager"},
@@ -233,8 +233,8 @@ func TestNextRun_TriggerOnly(t *testing.T) {
 // --- IsDue tests ---
 
 func TestIsDue_NeverRun(t *testing.T) {
-	agent := &corev1alpha1.InfraAgent{
-		Spec: corev1alpha1.InfraAgentSpec{
+	agent := &corev1alpha1.LegatorAgent{
+		Spec: corev1alpha1.LegatorAgentSpec{
 			Schedule: corev1alpha1.ScheduleSpec{Cron: "*/5 * * * *"},
 		},
 	}
@@ -252,14 +252,14 @@ func TestIsDue_RecentRun(t *testing.T) {
 	now := time.Date(2026, 2, 19, 10, 3, 0, 0, time.UTC)
 	lastRun := time.Date(2026, 2, 19, 10, 0, 0, 0, time.UTC) // ran at :00
 
-	agent := &corev1alpha1.InfraAgent{
-		Spec: corev1alpha1.InfraAgentSpec{
+	agent := &corev1alpha1.LegatorAgent{
+		Spec: corev1alpha1.LegatorAgentSpec{
 			Schedule: corev1alpha1.ScheduleSpec{
 				Cron:     "*/5 * * * *",
 				Timezone: "UTC",
 			},
 		},
-		Status: corev1alpha1.InfraAgentStatus{
+		Status: corev1alpha1.LegatorAgentStatus{
 			LastRunTime: &metav1.Time{Time: lastRun},
 		},
 	}
@@ -278,14 +278,14 @@ func TestIsDue_PastDue(t *testing.T) {
 	now := time.Date(2026, 2, 19, 10, 6, 0, 0, time.UTC)
 	lastRun := time.Date(2026, 2, 19, 10, 0, 0, 0, time.UTC)
 
-	agent := &corev1alpha1.InfraAgent{
-		Spec: corev1alpha1.InfraAgentSpec{
+	agent := &corev1alpha1.LegatorAgent{
+		Spec: corev1alpha1.LegatorAgentSpec{
 			Schedule: corev1alpha1.ScheduleSpec{
 				Cron:     "*/5 * * * *",
 				Timezone: "UTC",
 			},
 		},
-		Status: corev1alpha1.InfraAgentStatus{
+		Status: corev1alpha1.LegatorAgentStatus{
 			LastRunTime: &metav1.Time{Time: lastRun},
 		},
 	}
@@ -301,8 +301,8 @@ func TestIsDue_PastDue(t *testing.T) {
 }
 
 func TestIsDue_Paused(t *testing.T) {
-	agent := &corev1alpha1.InfraAgent{
-		Spec: corev1alpha1.InfraAgentSpec{
+	agent := &corev1alpha1.LegatorAgent{
+		Spec: corev1alpha1.LegatorAgentSpec{
 			Schedule: corev1alpha1.ScheduleSpec{Cron: "*/5 * * * *"},
 			Paused:   true,
 		},
@@ -356,8 +356,8 @@ func TestApplyJitter_SmallInterval(t *testing.T) {
 }
 
 func TestComputeInterval_FromInterval(t *testing.T) {
-	agent := &corev1alpha1.InfraAgent{
-		Spec: corev1alpha1.InfraAgentSpec{
+	agent := &corev1alpha1.LegatorAgent{
+		Spec: corev1alpha1.LegatorAgentSpec{
 			Schedule: corev1alpha1.ScheduleSpec{Interval: "5m"},
 		},
 	}
@@ -369,8 +369,8 @@ func TestComputeInterval_FromInterval(t *testing.T) {
 }
 
 func TestComputeInterval_FromCron(t *testing.T) {
-	agent := &corev1alpha1.InfraAgent{
-		Spec: corev1alpha1.InfraAgentSpec{
+	agent := &corev1alpha1.LegatorAgent{
+		Spec: corev1alpha1.LegatorAgentSpec{
 			Schedule: corev1alpha1.ScheduleSpec{Cron: "*/5 * * * *"},
 		},
 	}

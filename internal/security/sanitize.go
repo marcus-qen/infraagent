@@ -9,8 +9,8 @@ You may obtain a copy of the License at
 */
 
 // Package security provides credential hygiene and sanitization utilities
-// for the InfraAgent controller. It ensures that secrets, tokens, and
-// other sensitive data never appear in AgentRun status fields, prompts,
+// for the LegatorAgent controller. It ensures that secrets, tokens, and
+// other sensitive data never appear in LegatorRun status fields, prompts,
 // or log output.
 package security
 
@@ -77,7 +77,7 @@ func ContainsSecret(text string) bool {
 }
 
 // SanitizeActionResult sanitizes a tool call result before recording it
-// in the AgentRun audit trail. This truncates to maxLen after sanitizing.
+// in the LegatorRun audit trail. This truncates to maxLen after sanitizing.
 func SanitizeActionResult(result string, maxLen int) string {
 	sanitized := Sanitize(result)
 	if maxLen > 0 && len(sanitized) > maxLen {

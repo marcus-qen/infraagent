@@ -30,9 +30,9 @@ import (
 	"sync"
 	"time"
 
-	corev1alpha1 "github.com/marcus-qen/infraagent/api/v1alpha1"
-	"github.com/marcus-qen/infraagent/internal/resolver"
-	"github.com/marcus-qen/infraagent/internal/skill"
+	corev1alpha1 "github.com/marcus-qen/legator/api/v1alpha1"
+	"github.com/marcus-qen/legator/internal/resolver"
+	"github.com/marcus-qen/legator/internal/skill"
 )
 
 // Decision is the result of the engine evaluating a tool call.

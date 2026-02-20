@@ -1,4 +1,4 @@
-# Contributing to InfraAgent
+# Contributing to LegatorAgent
 
 Thank you for your interest in contributing! This document covers development setup, testing, and the PR process.
 
@@ -15,8 +15,8 @@ Thank you for your interest in contributing! This document covers development se
 ### Clone and Build
 
 ```bash
-git clone https://github.com/marcus-qen/infraagent.git
-cd infraagent
+git clone https://github.com/marcus-qen/legator.git
+cd legator
 go build -o bin/manager ./cmd/
 ```
 
@@ -60,14 +60,14 @@ internal/
   ratelimit/           # Rate limiting
   reporter/            # Notification channels + escalation
   resolver/            # Environment + model tier resolution
-  retention/           # AgentRun TTL cleanup
+  retention/           # LegatorRun TTL cleanup
   runner/              # Agent execution loop
   scheduler/           # Cron/interval/webhook scheduling
   security/            # Credential sanitization
   skill/               # Skill loader (git, configmap, bundled)
   telemetry/           # OpenTelemetry tracing
   tools/               # Tool implementations (kubectl, HTTP)
-charts/infraagent/     # Helm chart
+charts/legator/     # Helm chart
 docs/                  # Documentation
 examples/              # Example agents, environments, configs
 test/                  # E2E tests
@@ -131,7 +131,7 @@ Changes to these packages must:
 
 ## Reporting Issues
 
-- Use [GitHub Issues](https://github.com/marcus-qen/infraagent/issues)
+- Use [GitHub Issues](https://github.com/marcus-qen/legator/issues)
 - Include: what you expected, what happened, reproduction steps
 - For security issues, email the maintainers directly (do not file a public issue)
 

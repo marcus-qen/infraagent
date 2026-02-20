@@ -21,14 +21,14 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	corev1alpha1 "github.com/marcus-qen/infraagent/api/v1alpha1"
-	"github.com/marcus-qen/infraagent/internal/metrics"
-	"github.com/marcus-qen/infraagent/internal/ratelimit"
-	"github.com/marcus-qen/infraagent/internal/runner"
+	corev1alpha1 "github.com/marcus-qen/legator/api/v1alpha1"
+	"github.com/marcus-qen/legator/internal/metrics"
+	"github.com/marcus-qen/legator/internal/ratelimit"
+	"github.com/marcus-qen/legator/internal/runner"
 )
 
 // Scheduler manages the lifecycle of scheduled agent runs.
-// It periodically checks all InfraAgent CRs, triggers due agents,
+// It periodically checks all LegatorAgent CRs, triggers due agents,
 // respects concurrency limits, and updates schedule status.
 //
 // The Scheduler runs as a Runnable in the controller-runtime manager,
@@ -57,7 +57,7 @@ type Scheduler struct {
 
 	// runConfigFactory builds RunConfig for an agent.
 	// Must be set before Start().
-	RunConfigFactory func(agent *corev1alpha1.InfraAgent) (runner.RunConfig, error)
+	RunConfigFactory func(agent *corev1alpha1.LegatorAgent) (runner.RunConfig, error)
 }
 
 // Config configures the scheduler.
@@ -147,10 +147,10 @@ func (s *Scheduler) tick(ctx context.Context) {
 		s.log.Info("Cleaned stale in-flight runs", "count", cleaned)
 	}
 
-	// List all InfraAgents
-	agentList := &corev1alpha1.InfraAgentList{}
+	// List all LegatorAgents
+	agentList := &corev1alpha1.LegatorAgentList{}
 	if err := s.client.List(ctx, agentList); err != nil {
-		s.log.Error(err, "Failed to list InfraAgents")
+		s.log.Error(err, "Failed to list LegatorAgents")
 		return
 	}
 
@@ -162,7 +162,7 @@ func (s *Scheduler) tick(ctx context.Context) {
 }
 
 // evaluateAgent checks if a single agent is due and triggers if so.
-func (s *Scheduler) evaluateAgent(ctx context.Context, agent *corev1alpha1.InfraAgent, now time.Time) {
+func (s *Scheduler) evaluateAgent(ctx context.Context, agent *corev1alpha1.LegatorAgent, now time.Time) {
 	// Step 3.6: Pause/resume
 	if agent.Spec.Paused {
 		return
@@ -217,7 +217,7 @@ func (s *Scheduler) evaluateAgent(ctx context.Context, agent *corev1alpha1.Infra
 // triggerRun starts an agent run in a goroutine with concurrency tracking.
 func (s *Scheduler) triggerRun(
 	ctx context.Context,
-	agent *corev1alpha1.InfraAgent,
+	agent *corev1alpha1.LegatorAgent,
 	agentKey string,
 	trigger corev1alpha1.RunTrigger,
 ) {
@@ -302,7 +302,7 @@ func (s *Scheduler) handleWebhookTrigger(ctx context.Context, trigger WebhookTri
 	agentKey := fmt.Sprintf("%s/%s", trigger.AgentKey.Namespace, trigger.AgentKey.Name)
 
 	// Fetch fresh agent state
-	agent := &corev1alpha1.InfraAgent{}
+	agent := &corev1alpha1.LegatorAgent{}
 	if err := s.client.Get(ctx, trigger.AgentKey, agent); err != nil {
 		s.log.Error(err, "Failed to get agent for webhook trigger",
 			"agent", trigger.AgentKey.String(),
@@ -324,7 +324,7 @@ func (s *Scheduler) handleWebhookTrigger(ctx context.Context, trigger WebhookTri
 }
 
 // updateNextRunTime computes and updates the next scheduled run time on status.
-func (s *Scheduler) updateNextRunTime(ctx context.Context, agent *corev1alpha1.InfraAgent, now time.Time) {
+func (s *Scheduler) updateNextRunTime(ctx context.Context, agent *corev1alpha1.LegatorAgent, now time.Time) {
 	next, err := NextRun(agent, now)
 	if err != nil || next.IsZero() {
 		return
@@ -355,10 +355,10 @@ func (s *Scheduler) updateNextRunTime(ctx context.Context, agent *corev1alpha1.I
 	}
 }
 
-// updateAgentAfterRun updates the InfraAgent status after a run completes.
-func (s *Scheduler) updateAgentAfterRun(ctx context.Context, agent *corev1alpha1.InfraAgent, agentRun *corev1alpha1.AgentRun) {
+// updateAgentAfterRun updates the LegatorAgent status after a run completes.
+func (s *Scheduler) updateAgentAfterRun(ctx context.Context, agent *corev1alpha1.LegatorAgent, agentRun *corev1alpha1.LegatorRun) {
 	// Refetch to avoid conflicts
-	fresh := &corev1alpha1.InfraAgent{}
+	fresh := &corev1alpha1.LegatorAgent{}
 	key := types.NamespacedName{Namespace: agent.Namespace, Name: agent.Name}
 	if err := s.client.Get(ctx, key, fresh); err != nil {
 		s.log.Error(err, "Failed to refetch agent after run", "agent", agent.Name)
@@ -399,7 +399,7 @@ func (s *Scheduler) NeedLeaderElection() bool {
 
 // RegisterWebhookTriggers scans an agent's trigger list and registers
 // webhook sources with the webhook handler.
-func (s *Scheduler) RegisterWebhookTriggers(agent *corev1alpha1.InfraAgent) {
+func (s *Scheduler) RegisterWebhookTriggers(agent *corev1alpha1.LegatorAgent) {
 	agentKey := types.NamespacedName{Namespace: agent.Namespace, Name: agent.Name}
 
 	// Clear existing registrations

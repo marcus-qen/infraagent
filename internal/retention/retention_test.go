@@ -21,7 +21,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	corev1alpha1 "github.com/marcus-qen/infraagent/api/v1alpha1"
+	corev1alpha1 "github.com/marcus-qen/legator/api/v1alpha1"
 )
 
 func newScheme() *runtime.Scheme {
@@ -30,19 +30,19 @@ func newScheme() *runtime.Scheme {
 	return s
 }
 
-func makeRun(name, ns, agent string, phase corev1alpha1.RunPhase, createdAt time.Time, completedAt *time.Time) *corev1alpha1.AgentRun {
-	run := &corev1alpha1.AgentRun{
+func makeRun(name, ns, agent string, phase corev1alpha1.RunPhase, createdAt time.Time, completedAt *time.Time) *corev1alpha1.LegatorRun {
+	run := &corev1alpha1.LegatorRun{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:              name,
 			Namespace:         ns,
 			CreationTimestamp: metav1.Time{Time: createdAt},
 		},
-		Spec: corev1alpha1.AgentRunSpec{
+		Spec: corev1alpha1.LegatorRunSpec{
 			AgentRef:       agent,
 			EnvironmentRef: "env",
 			Trigger:        corev1alpha1.RunTriggerScheduled,
 		},
-		Status: corev1alpha1.AgentRunStatus{
+		Status: corev1alpha1.LegatorRunStatus{
 			Phase: phase,
 		},
 	}
@@ -72,13 +72,13 @@ func TestRetention_NoRuns(t *testing.T) {
 func TestRetention_NothingExpired(t *testing.T) {
 	now := time.Now()
 	s := newScheme()
-	runs := []corev1alpha1.AgentRun{
+	runs := []corev1alpha1.LegatorRun{
 		*makeRun("run-1", "default", "watchman", corev1alpha1.RunPhaseSucceeded, now.Add(-1*time.Hour), timePtr(now.Add(-1*time.Hour))),
 		*makeRun("run-2", "default", "watchman", corev1alpha1.RunPhaseSucceeded, now.Add(-2*time.Hour), timePtr(now.Add(-2*time.Hour))),
 	}
 
 	fc := fake.NewClientBuilder().WithScheme(s).
-		WithLists(&corev1alpha1.AgentRunList{Items: runs}).
+		WithLists(&corev1alpha1.LegatorRunList{Items: runs}).
 		Build()
 	log := zap.New(zap.UseDevMode(true))
 
@@ -100,7 +100,7 @@ func TestRetention_DeletesExpired(t *testing.T) {
 	now := time.Now()
 	s := newScheme()
 
-	runs := []corev1alpha1.AgentRun{
+	runs := []corev1alpha1.LegatorRun{
 		// Recent — should be kept
 		*makeRun("run-recent", "default", "watchman", corev1alpha1.RunPhaseSucceeded,
 			now.Add(-1*time.Hour), timePtr(now.Add(-1*time.Hour))),
@@ -121,7 +121,7 @@ func TestRetention_DeletesExpired(t *testing.T) {
 	}
 
 	fc := fake.NewClientBuilder().WithScheme(s).
-		WithLists(&corev1alpha1.AgentRunList{Items: runs}).
+		WithLists(&corev1alpha1.LegatorRunList{Items: runs}).
 		Build()
 	log := zap.New(zap.UseDevMode(true))
 
@@ -153,7 +153,7 @@ func TestRetention_DeletesExpired(t *testing.T) {
 	}
 
 	// Verify remaining
-	remaining := &corev1alpha1.AgentRunList{}
+	remaining := &corev1alpha1.LegatorRunList{}
 	_ = fc.List(context.Background(), remaining)
 	if len(remaining.Items) != 3 {
 		t.Fatalf("expected 3 remaining, got %d", len(remaining.Items))
@@ -164,7 +164,7 @@ func TestRetention_SkipsNonTerminal(t *testing.T) {
 	now := time.Now()
 	s := newScheme()
 
-	runs := []corev1alpha1.AgentRun{
+	runs := []corev1alpha1.LegatorRun{
 		*makeRun("run-pending", "default", "forge", corev1alpha1.RunPhasePending,
 			now.Add(-30*24*time.Hour), nil),
 		*makeRun("run-running", "default", "forge", corev1alpha1.RunPhaseRunning,
@@ -172,7 +172,7 @@ func TestRetention_SkipsNonTerminal(t *testing.T) {
 	}
 
 	fc := fake.NewClientBuilder().WithScheme(s).
-		WithLists(&corev1alpha1.AgentRunList{Items: runs}).
+		WithLists(&corev1alpha1.LegatorRunList{Items: runs}).
 		Build()
 	log := zap.New(zap.UseDevMode(true))
 
@@ -191,7 +191,7 @@ func TestRetention_BatchLimit(t *testing.T) {
 	now := time.Now()
 	s := newScheme()
 
-	var runs []corev1alpha1.AgentRun
+	var runs []corev1alpha1.LegatorRun
 	for i := 0; i < 20; i++ {
 		runs = append(runs, *makeRun(
 			fmt.Sprintf("run-%d", i), "default", "bulk-agent",
@@ -202,7 +202,7 @@ func TestRetention_BatchLimit(t *testing.T) {
 	}
 
 	fc := fake.NewClientBuilder().WithScheme(s).
-		WithLists(&corev1alpha1.AgentRunList{Items: runs}).
+		WithLists(&corev1alpha1.LegatorRunList{Items: runs}).
 		Build()
 	log := zap.New(zap.UseDevMode(true))
 
@@ -228,7 +228,7 @@ func TestRetention_MultipleAgents(t *testing.T) {
 	now := time.Now()
 	s := newScheme()
 
-	runs := []corev1alpha1.AgentRun{
+	runs := []corev1alpha1.LegatorRun{
 		// Agent A: 3 runs, 1 expired
 		*makeRun("a-1", "ns", "agent-a", corev1alpha1.RunPhaseSucceeded,
 			now.Add(-1*time.Hour), timePtr(now.Add(-1*time.Hour))),
@@ -244,7 +244,7 @@ func TestRetention_MultipleAgents(t *testing.T) {
 	}
 
 	fc := fake.NewClientBuilder().WithScheme(s).
-		WithLists(&corev1alpha1.AgentRunList{Items: runs}).
+		WithLists(&corev1alpha1.LegatorRunList{Items: runs}).
 		Build()
 	log := zap.New(zap.UseDevMode(true))
 

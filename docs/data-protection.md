@@ -1,6 +1,6 @@
 # Data Protection
 
-Data is sacred. InfraAgent enforces this principle at the deepest level of the runtime — with rules that cannot be configured away.
+Data is sacred. LegatorAgent enforces this principle at the deepest level of the runtime — with rules that cannot be configured away.
 
 ## The Rule
 
@@ -25,7 +25,7 @@ These operations are blocked unconditionally, regardless of agent autonomy, Acti
 
 ### Declared Data Resources
 
-The AgentEnvironment's `dataResources` section declares what data exists in this environment:
+The LegatorEnvironment's `dataResources` section declares what data exists in this environment:
 
 ```yaml
 dataResources:
@@ -58,7 +58,7 @@ When an agent attempts a mutation near data resources, the engine runs additiona
 - **Backup freshness**: When was the last backup? If older than `backupMaxAge`, a warning is logged.
 - **Backup destination**: Is the backup destination reachable?
 
-These don't block execution (unless the mutation targets data directly), but they appear in the AgentRun audit trail as warnings.
+These don't block execution (unless the mutation targets data directly), but they appear in the LegatorRun audit trail as warnings.
 
 ## Four-Tier Classification
 
@@ -79,7 +79,7 @@ An agent with `autonomy: automate-destructive` can do everything **except** data
 
 ## Audit Trail
 
-Every data protection decision is recorded in the AgentRun:
+Every data protection decision is recorded in the LegatorRun:
 
 ```yaml
 status:
@@ -99,7 +99,7 @@ status:
 
 ## Multi-Cluster Data Protection
 
-Each AgentEnvironment declares its own data resources. When an agent manages a remote cluster, data protection is enforced per-environment — the agent protecting Cluster A knows about Cluster A's databases, not Cluster B's.
+Each LegatorEnvironment declares its own data resources. When an agent manages a remote cluster, data protection is enforced per-environment — the agent protecting Cluster A knows about Cluster A's databases, not Cluster B's.
 
 ## Why This Design?
 

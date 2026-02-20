@@ -8,7 +8,7 @@ You may obtain a copy of the License at
     http://www.apache.org/licenses/LICENSE-2.0
 */
 
-// Package telemetry configures OpenTelemetry tracing for the InfraAgent operator.
+// Package telemetry configures OpenTelemetry tracing for the LegatorAgent operator.
 //
 // Spans follow the OTel GenAI semantic conventions where applicable:
 //   - gen_ai.system — the LLM provider
@@ -16,7 +16,7 @@ You may obtain a copy of the License at
 //   - gen_ai.usage.input_tokens — tokens consumed
 //   - gen_ai.usage.output_tokens — tokens generated
 //
-// Custom span attributes use the `infraagent.` prefix.
+// Custom span attributes use the `legator.` prefix.
 package telemetry
 
 import (
@@ -33,7 +33,7 @@ import (
 )
 
 const (
-	tracerName = "infraagent.io/controller"
+	tracerName = "legator.io/controller"
 )
 
 // Tracer returns the package-level tracer.
@@ -61,7 +61,7 @@ func InitTraceProvider(ctx context.Context, endpoint string, version string) (fu
 	res, err := resource.New(ctx,
 		resource.WithHost(),
 		resource.WithAttributes(
-			semconv.ServiceNameKey.String("infraagent-controller"),
+			semconv.ServiceNameKey.String("legator-controller"),
 			semconv.ServiceVersionKey.String(version),
 		),
 	)
@@ -86,8 +86,8 @@ func InitTraceProvider(ctx context.Context, endpoint string, version string) (fu
 func StartRunSpan(ctx context.Context, agent, trigger string) (context.Context, trace.Span) {
 	return Tracer().Start(ctx, "agent.run",
 		trace.WithAttributes(
-			attribute.String("infraagent.agent", agent),
-			attribute.String("infraagent.trigger", trigger),
+			attribute.String("legator.agent", agent),
+			attribute.String("legator.trigger", trigger),
 		),
 		trace.WithSpanKind(trace.SpanKindInternal),
 	)
@@ -97,7 +97,7 @@ func StartRunSpan(ctx context.Context, agent, trigger string) (context.Context, 
 func StartAssemblySpan(ctx context.Context, agent string) (context.Context, trace.Span) {
 	return Tracer().Start(ctx, "agent.assemble",
 		trace.WithAttributes(
-			attribute.String("infraagent.agent", agent),
+			attribute.String("legator.agent", agent),
 		),
 	)
 }
@@ -108,7 +108,7 @@ func StartLLMCallSpan(ctx context.Context, model, provider string, iteration int
 		trace.WithAttributes(
 			attribute.String("gen_ai.system", provider),
 			attribute.String("gen_ai.request.model", model),
-			attribute.Int("infraagent.iteration", iteration),
+			attribute.Int("legator.iteration", iteration),
 		),
 		trace.WithSpanKind(trace.SpanKindClient),
 	)
@@ -119,7 +119,7 @@ func EndLLMCallSpan(span trace.Span, inputTokens, outputTokens int64, hasToolCal
 	span.SetAttributes(
 		attribute.Int64("gen_ai.usage.input_tokens", inputTokens),
 		attribute.Int64("gen_ai.usage.output_tokens", outputTokens),
-		attribute.Bool("infraagent.has_tool_calls", hasToolCalls),
+		attribute.Bool("legator.has_tool_calls", hasToolCalls),
 	)
 	span.End()
 }
@@ -128,9 +128,9 @@ func EndLLMCallSpan(span trace.Span, inputTokens, outputTokens int64, hasToolCal
 func StartToolCallSpan(ctx context.Context, tool, target, tier string) (context.Context, trace.Span) {
 	return Tracer().Start(ctx, "agent.tool_call",
 		trace.WithAttributes(
-			attribute.String("infraagent.tool", tool),
-			attribute.String("infraagent.target", target),
-			attribute.String("infraagent.action_tier", tier),
+			attribute.String("legator.tool", tool),
+			attribute.String("legator.target", target),
+			attribute.String("legator.action_tier", tier),
 		),
 	)
 }
@@ -138,11 +138,11 @@ func StartToolCallSpan(ctx context.Context, tool, target, tier string) (context.
 // EndToolCallSpan enriches the tool span with result data.
 func EndToolCallSpan(span trace.Span, status string, blocked bool, blockReason string) {
 	span.SetAttributes(
-		attribute.String("infraagent.action_status", status),
-		attribute.Bool("infraagent.blocked", blocked),
+		attribute.String("legator.action_status", status),
+		attribute.Bool("legator.blocked", blocked),
 	)
 	if blocked {
-		span.SetAttributes(attribute.String("infraagent.block_reason", blockReason))
+		span.SetAttributes(attribute.String("legator.block_reason", blockReason))
 	}
 	span.End()
 }
@@ -151,8 +151,8 @@ func EndToolCallSpan(span trace.Span, status string, blocked bool, blockReason s
 func StartReportSpan(ctx context.Context, agent, channel string) (context.Context, trace.Span) {
 	return Tracer().Start(ctx, "agent.report",
 		trace.WithAttributes(
-			attribute.String("infraagent.agent", agent),
-			attribute.String("infraagent.report_channel", channel),
+			attribute.String("legator.agent", agent),
+			attribute.String("legator.report_channel", channel),
 		),
 	)
 }

@@ -1,5 +1,5 @@
-apiVersion: core.infraagent.io/v1alpha1
-kind: AgentEnvironment
+apiVersion: legator.io/v1alpha1
+kind: LegatorEnvironment
 metadata:
   name: dev-lab
   namespace: agents

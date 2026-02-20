@@ -28,7 +28,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
-	corev1alpha1 "github.com/marcus-qen/infraagent/api/v1alpha1"
+	corev1alpha1 "github.com/marcus-qen/legator/api/v1alpha1"
 )
 
 // ModelTierConfigReconciler reconciles a ModelTierConfig object.
@@ -37,9 +37,9 @@ type ModelTierConfigReconciler struct {
 	Scheme *runtime.Scheme
 }
 
-// +kubebuilder:rbac:groups=core.infraagent.io,resources=modeltierconfigs,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=core.infraagent.io,resources=modeltierconfigs/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups=core.infraagent.io,resources=modeltierconfigs/finalizers,verbs=update
+// +kubebuilder:rbac:groups=legator.io,resources=modeltierconfigs,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=legator.io,resources=modeltierconfigs/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=legator.io,resources=modeltierconfigs/finalizers,verbs=update
 
 // Reconcile handles ModelTierConfig create/update/delete events.
 // Phase 0: logs reconciliation, validates tier mappings, and sets status.

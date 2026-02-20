@@ -19,12 +19,12 @@ import (
 
 	"github.com/robfig/cron/v3"
 
-	corev1alpha1 "github.com/marcus-qen/infraagent/api/v1alpha1"
+	corev1alpha1 "github.com/marcus-qen/legator/api/v1alpha1"
 )
 
 // NextRun computes the next scheduled run time for an agent.
 // Returns zero time if the agent has no schedule or is paused.
-func NextRun(agent *corev1alpha1.InfraAgent, now time.Time) (time.Time, error) {
+func NextRun(agent *corev1alpha1.LegatorAgent, now time.Time) (time.Time, error) {
 	if agent.Spec.Paused {
 		return time.Time{}, nil
 	}
@@ -54,7 +54,7 @@ func NextRun(agent *corev1alpha1.InfraAgent, now time.Time) (time.Time, error) {
 // IsDue returns true if the agent should run now.
 // An agent is due if its next scheduled run time has passed
 // and it hasn't already run since that time.
-func IsDue(agent *corev1alpha1.InfraAgent, now time.Time) (bool, error) {
+func IsDue(agent *corev1alpha1.LegatorAgent, now time.Time) (bool, error) {
 	if agent.Spec.Paused {
 		return false, nil
 	}
@@ -93,7 +93,7 @@ func nextCronRun(expr string, now time.Time) (time.Time, error) {
 }
 
 // nextRunAfter computes the next run time after a given reference time.
-func nextRunAfter(agent *corev1alpha1.InfraAgent, after time.Time) (time.Time, error) {
+func nextRunAfter(agent *corev1alpha1.LegatorAgent, after time.Time) (time.Time, error) {
 	spec := agent.Spec.Schedule
 
 	loc, err := loadTimezone(spec.Timezone)
@@ -120,7 +120,7 @@ func nextRunAfter(agent *corev1alpha1.InfraAgent, after time.Time) (time.Time, e
 
 // nextIntervalRun computes the next interval-based run.
 // If the agent has never run, it's due immediately.
-func nextIntervalRun(interval string, agent *corev1alpha1.InfraAgent, now time.Time) (time.Time, error) {
+func nextIntervalRun(interval string, agent *corev1alpha1.LegatorAgent, now time.Time) (time.Time, error) {
 	dur, err := time.ParseDuration(interval)
 	if err != nil {
 		return time.Time{}, fmt.Errorf("invalid interval %q: %w", interval, err)
@@ -174,7 +174,7 @@ func ApplyJitter(scheduled time.Time, interval time.Duration, jitterPercent floa
 }
 
 // ComputeInterval returns the effective scheduling interval for jitter calculation.
-func ComputeInterval(agent *corev1alpha1.InfraAgent) time.Duration {
+func ComputeInterval(agent *corev1alpha1.LegatorAgent) time.Duration {
 	spec := agent.Spec.Schedule
 
 	if spec.Interval != "" {

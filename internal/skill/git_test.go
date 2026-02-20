@@ -15,13 +15,13 @@ import (
 )
 
 func TestParseGitSource_Full(t *testing.T) {
-	gs, err := ParseGitSource("git://github.com/marcus-qen/infraagent-skills#watchman-light@v1.0.0")
+	gs, err := ParseGitSource("git://github.com/marcus-qen/legator-skills#watchman-light@v1.0.0")
 	if err != nil {
 		t.Fatalf("ParseGitSource() error = %v", err)
 	}
 
-	if gs.URL != "https://github.com/marcus-qen/infraagent-skills" {
-		t.Errorf("URL = %q, want %q", gs.URL, "https://github.com/marcus-qen/infraagent-skills")
+	if gs.URL != "https://github.com/marcus-qen/legator-skills" {
+		t.Errorf("URL = %q, want %q", gs.URL, "https://github.com/marcus-qen/legator-skills")
 	}
 	if gs.Path != "watchman-light" {
 		t.Errorf("Path = %q, want %q", gs.Path, "watchman-light")

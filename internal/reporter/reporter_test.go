@@ -19,17 +19,17 @@ import (
 	"testing"
 	"time"
 
-	corev1alpha1 "github.com/marcus-qen/infraagent/api/v1alpha1"
+	corev1alpha1 "github.com/marcus-qen/legator/api/v1alpha1"
 )
 
 // --- Report building tests ---
 
-func TestFromAgentRun_Succeeded(t *testing.T) {
-	agent := &corev1alpha1.InfraAgent{}
+func TestFromLegatorRun_Succeeded(t *testing.T) {
+	agent := &corev1alpha1.LegatorAgent{}
 	agent.Name = "watchman-light"
 	agent.Spec.Emoji = "👁️"
 
-	run := &corev1alpha1.AgentRun{}
+	run := &corev1alpha1.LegatorRun{}
 	run.Name = "watchman-light-abc"
 	run.Status.Phase = corev1alpha1.RunPhaseSucceeded
 	run.Status.Report = "All endpoints healthy"
@@ -38,7 +38,7 @@ func TestFromAgentRun_Succeeded(t *testing.T) {
 		Iterations:  3,
 	}
 
-	report := FromAgentRun(agent, run)
+	report := FromLegatorRun(agent, run)
 
 	if report.Severity != SeveritySuccess {
 		t.Errorf("expected success severity, got %s", report.Severity)
@@ -54,14 +54,14 @@ func TestFromAgentRun_Succeeded(t *testing.T) {
 	}
 }
 
-func TestFromAgentRun_Failed(t *testing.T) {
-	agent := &corev1alpha1.InfraAgent{}
+func TestFromLegatorRun_Failed(t *testing.T) {
+	agent := &corev1alpha1.LegatorAgent{}
 	agent.Name = "forge"
 
-	run := &corev1alpha1.AgentRun{}
+	run := &corev1alpha1.LegatorRun{}
 	run.Status.Phase = corev1alpha1.RunPhaseFailed
 
-	report := FromAgentRun(agent, run)
+	report := FromLegatorRun(agent, run)
 
 	if report.Severity != SeverityFailure {
 		t.Errorf("expected failure severity, got %s", report.Severity)
@@ -71,28 +71,28 @@ func TestFromAgentRun_Failed(t *testing.T) {
 	}
 }
 
-func TestFromAgentRun_Escalated(t *testing.T) {
-	agent := &corev1alpha1.InfraAgent{}
+func TestFromLegatorRun_Escalated(t *testing.T) {
+	agent := &corev1alpha1.LegatorAgent{}
 	agent.Name = "vigil"
 
-	run := &corev1alpha1.AgentRun{}
+	run := &corev1alpha1.LegatorRun{}
 	run.Status.Phase = corev1alpha1.RunPhaseEscalated
 
-	report := FromAgentRun(agent, run)
+	report := FromLegatorRun(agent, run)
 
 	if report.Severity != SeverityEscalation {
 		t.Errorf("expected escalation severity, got %s", report.Severity)
 	}
 }
 
-func TestFromAgentRun_Blocked(t *testing.T) {
-	agent := &corev1alpha1.InfraAgent{}
+func TestFromLegatorRun_Blocked(t *testing.T) {
+	agent := &corev1alpha1.LegatorAgent{}
 	agent.Name = "scout"
 
-	run := &corev1alpha1.AgentRun{}
+	run := &corev1alpha1.LegatorRun{}
 	run.Status.Phase = corev1alpha1.RunPhaseBlocked
 
-	report := FromAgentRun(agent, run)
+	report := FromLegatorRun(agent, run)
 
 	if report.Severity != SeverityEscalation {
 		t.Errorf("expected escalation severity for blocked, got %s", report.Severity)
@@ -108,7 +108,7 @@ func TestShouldReport_SuccessSilent(t *testing.T) {
 		OnFinding: corev1alpha1.ReportLog,
 	}
 
-	run := &corev1alpha1.AgentRun{}
+	run := &corev1alpha1.LegatorRun{}
 	run.Status.Phase = corev1alpha1.RunPhaseSucceeded
 
 	should, _ := ShouldReport(reporting, run)
@@ -122,7 +122,7 @@ func TestShouldReport_SuccessNotify(t *testing.T) {
 		OnSuccess: corev1alpha1.ReportNotify,
 	}
 
-	run := &corev1alpha1.AgentRun{}
+	run := &corev1alpha1.LegatorRun{}
 	run.Status.Phase = corev1alpha1.RunPhaseSucceeded
 
 	should, action := ShouldReport(reporting, run)
@@ -139,7 +139,7 @@ func TestShouldReport_FailureEscalate(t *testing.T) {
 		OnFailure: corev1alpha1.ReportEscalate,
 	}
 
-	run := &corev1alpha1.AgentRun{}
+	run := &corev1alpha1.LegatorRun{}
 	run.Status.Phase = corev1alpha1.RunPhaseFailed
 
 	should, action := ShouldReport(reporting, run)
@@ -157,7 +157,7 @@ func TestShouldReport_FindingsOverrideSuccess(t *testing.T) {
 		OnFinding: corev1alpha1.ReportNotify,
 	}
 
-	run := &corev1alpha1.AgentRun{}
+	run := &corev1alpha1.LegatorRun{}
 	run.Status.Phase = corev1alpha1.RunPhaseSucceeded
 	run.Status.Findings = []corev1alpha1.RunFinding{
 		{Severity: corev1alpha1.FindingSeverityWarning, Message: "Something found"},
@@ -178,7 +178,7 @@ func TestShouldReport_EscalatedAlwaysReports(t *testing.T) {
 		OnFailure: corev1alpha1.ReportSilent,
 	}
 
-	run := &corev1alpha1.AgentRun{}
+	run := &corev1alpha1.LegatorRun{}
 	run.Status.Phase = corev1alpha1.RunPhaseEscalated
 
 	should, action := ShouldReport(reporting, run)
@@ -191,7 +191,7 @@ func TestShouldReport_EscalatedAlwaysReports(t *testing.T) {
 }
 
 func TestShouldReport_NilReporting(t *testing.T) {
-	run := &corev1alpha1.AgentRun{}
+	run := &corev1alpha1.LegatorRun{}
 	run.Status.Phase = corev1alpha1.RunPhaseFailed
 
 	should, _ := ShouldReport(nil, run)

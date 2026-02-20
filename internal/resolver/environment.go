@@ -18,10 +18,10 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	corev1alpha1 "github.com/marcus-qen/infraagent/api/v1alpha1"
+	corev1alpha1 "github.com/marcus-qen/legator/api/v1alpha1"
 )
 
-// ResolvedEnvironment is an AgentEnvironment with all secrets resolved.
+// ResolvedEnvironment is an LegatorEnvironment with all secrets resolved.
 type ResolvedEnvironment struct {
 	// Name is the environment name.
 	Name string
@@ -77,7 +77,7 @@ func (idx *DataResourceIndex) IsProtectedObjectStorage(name string) bool {
 	return idx.objectStorageNames[name]
 }
 
-// EnvironmentResolver resolves AgentEnvironment CRs and their secret references.
+// EnvironmentResolver resolves LegatorEnvironment CRs and their secret references.
 type EnvironmentResolver struct {
 	client    client.Client
 	namespace string
@@ -88,14 +88,14 @@ func NewEnvironmentResolver(c client.Client, namespace string) *EnvironmentResol
 	return &EnvironmentResolver{client: c, namespace: namespace}
 }
 
-// Resolve loads an AgentEnvironment by name and resolves all secret references.
+// Resolve loads an LegatorEnvironment by name and resolves all secret references.
 func (r *EnvironmentResolver) Resolve(ctx context.Context, envName string) (*ResolvedEnvironment, error) {
-	env := &corev1alpha1.AgentEnvironment{}
+	env := &corev1alpha1.LegatorEnvironment{}
 	if err := r.client.Get(ctx, types.NamespacedName{
 		Name:      envName,
 		Namespace: r.namespace,
 	}, env); err != nil {
-		return nil, fmt.Errorf("failed to get AgentEnvironment %q: %w", envName, err)
+		return nil, fmt.Errorf("failed to get LegatorEnvironment %q: %w", envName, err)
 	}
 
 	resolved := &ResolvedEnvironment{
