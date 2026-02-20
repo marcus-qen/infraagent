@@ -428,6 +428,18 @@ func main() {
 			}
 		}
 
+		// Register SQL tool if environment has database credentials
+		if env != nil {
+			sqlDatabases := buildSQLDatabases(env)
+			if len(sqlDatabases) > 0 {
+				sqlTool := tools.NewSQLTool(sqlDatabases)
+				reg.Register(sqlTool)
+				setupLog.Info("SQL tool registered",
+					"agent", agent.Name,
+					"databaseCount", len(sqlDatabases))
+			}
+		}
+
 		return reg, nil
 	}
 
@@ -466,9 +478,10 @@ func main() {
 			}
 		}
 
-		// Request dynamic SSH credentials from Vault if configured
+		// Request dynamic credentials from Vault if configured
 		if credMgr != nil && resolvedEnv != nil {
 			requestVaultSSHCredentials(context.Background(), credMgr, resolvedEnv, setupLog)
+			requestVaultDBCredentials(context.Background(), credMgr, resolvedEnv, setupLog)
 		}
 
 		reg, err := toolRegistryFactory(agent, resolvedEnv)
@@ -712,4 +725,124 @@ func requestVaultSSHCredentials(
 			"user", sshCreds.User,
 			"mount", credRef.Vault.Mount)
 	}
+}
+
+// requestVaultDBCredentials checks for vault-database credential types in the environment
+// and requests ephemeral database credentials from Vault. The resulting credentials are
+// injected back into the resolved environment's credential map so buildSQLDatabases
+// can pick them up as normal database credentials.
+func requestVaultDBCredentials(
+	ctx context.Context,
+	credMgr *vaultpkg.CredentialManager,
+	env *resolver.ResolvedEnvironment,
+	log logr.Logger,
+) {
+	if env.RawCredentials == nil {
+		return
+	}
+
+	for name, credRef := range env.RawCredentials {
+		if credRef.Type != "vault-database" || credRef.Vault == nil {
+			continue
+		}
+
+		dbCreds, err := credMgr.RequestDBCredentials(ctx, credRef.Vault.Mount, credRef.Vault.Role)
+		if err != nil {
+			log.Error(err, "failed to request Vault database credentials",
+				"credential", name,
+				"mount", credRef.Vault.Mount,
+				"role", credRef.Vault.Role)
+			continue
+		}
+
+		// Inject the ephemeral credentials back into the resolved environment
+		if env.Credentials[name] == nil {
+			env.Credentials[name] = make(map[string]string)
+		}
+		env.Credentials[name]["username"] = dbCreds.Username
+		env.Credentials[name]["password"] = dbCreds.Password
+
+		log.Info("Vault database credentials injected",
+			"credential", name,
+			"username", dbCreds.Username,
+			"mount", credRef.Vault.Mount,
+			"role", credRef.Vault.Role)
+	}
+}
+
+// buildSQLDatabases extracts database configuration from the resolved environment.
+// Looks for credentials with keys: driver, host, port, dbname, and either username/password
+// or Vault-injected credentials.
+func buildSQLDatabases(env *resolver.ResolvedEnvironment) map[string]*tools.SQLDatabase {
+	dbs := make(map[string]*tools.SQLDatabase)
+
+	for name, data := range env.Credentials {
+		driver := data["driver"]
+		if driver == "" {
+			continue // Not a database credential
+		}
+
+		host := data["host"]
+		if host == "" {
+			continue
+		}
+
+		port := data["port"]
+		dbname := data["dbname"]
+		if dbname == "" {
+			dbname = data["database"]
+		}
+
+		username := data["username"]
+		if username == "" {
+			username = data["user"]
+		}
+		password := data["password"]
+
+		// Must have auth
+		if username == "" {
+			continue
+		}
+
+		// Build DSN based on driver
+		var dsn string
+		switch driver {
+		case "postgres", "postgresql":
+			sslmode := data["sslmode"]
+			if sslmode == "" {
+				sslmode = "require"
+			}
+			if port == "" {
+				port = "5432"
+			}
+			dsn = fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
+				host, port, username, password, dbname, sslmode)
+		case "mysql":
+			if port == "" {
+				port = "3306"
+			}
+			tls := data["tls"]
+			if tls == "" {
+				tls = "preferred"
+			}
+			dsn = fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?tls=%s&parseTime=true",
+				username, password, host, port, dbname, tls)
+		default:
+			continue // Unsupported driver
+		}
+
+		db := &tools.SQLDatabase{
+			Driver: driver,
+			DSN:    dsn,
+		}
+
+		// Normalise driver name for database/sql
+		if db.Driver == "postgresql" {
+			db.Driver = "postgres"
+		}
+
+		dbs[name] = db
+	}
+
+	return dbs
 }

@@ -28,6 +28,7 @@ func NewProtectionEngine(userClasses ...ProtectionClass) *ProtectionEngine {
 	classes := []ProtectionClass{
 		DefaultKubernetesProtectionClass(),
 		DefaultSSHProtectionClass(),
+		DefaultSQLProtectionClass(),
 	}
 	// User classes extend (never weaken) the built-ins
 	classes = append(classes, userClasses...)

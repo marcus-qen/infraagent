@@ -91,9 +91,11 @@ func TestProtectionEngineUserClasses(t *testing.T) {
 	}{
 		{"DROP TABLE blocked", "sql", "DROP TABLE users", false, ProtectionBlock},
 		{"TRUNCATE blocked", "sql", "TRUNCATE TABLE sessions", false, ProtectionBlock},
-		{"DELETE needs approval", "sql", "DELETE FROM logs WHERE age > 30", false, ProtectionApprove},
+		// Built-in SQL class blocks DELETE before user class can weaken to approve
+		{"DELETE blocked by built-in", "sql", "DELETE FROM logs WHERE age > 30", false, ProtectionBlock},
 		{"SELECT audited (but allowed)", "sql", "SELECT * FROM users", true, ProtectionAudit},
-		{"SQL INSERT allowed (no matching rule)", "sql", "INSERT INTO logs VALUES (1, 'test')", true, ProtectionAction(0)},
+		// Built-in SQL class blocks INSERT (data mutation)
+		{"SQL INSERT blocked by built-in", "sql", "INSERT INTO logs VALUES (1, 'test')", false, ProtectionBlock},
 
 		// Built-in classes still work
 		{"K8s PVC still blocked", "kubernetes", "delete persistentvolumeclaim/data", false, ProtectionBlock},
@@ -141,9 +143,9 @@ func TestProtectionEngineClassList(t *testing.T) {
 	pe := NewProtectionEngine(custom)
 	classes := pe.Classes()
 
-	// Should have built-in K8s + SSH + custom
-	if len(classes) != 3 {
-		t.Errorf("Expected 3 classes, got %d", len(classes))
+	// Should have built-in K8s + SSH + SQL + custom
+	if len(classes) != 4 {
+		t.Errorf("Expected 4 classes, got %d", len(classes))
 	}
 
 	names := make(map[string]bool)
@@ -151,7 +153,7 @@ func TestProtectionEngineClassList(t *testing.T) {
 		names[c.Name] = true
 	}
 
-	for _, want := range []string{"kubernetes-data", "ssh-safety", "custom"} {
+	for _, want := range []string{"kubernetes-data", "ssh-safety", "sql-defaults", "custom"} {
 		if !names[want] {
 			t.Errorf("Missing protection class: %q", want)
 		}
