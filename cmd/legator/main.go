@@ -23,7 +23,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/url"
 	"os"
@@ -946,12 +945,6 @@ func formatTokens(tokens int64) string {
 		return fmt.Sprintf("%.1fK", float64(tokens)/1_000)
 	}
 	return fmt.Sprintf("%d", tokens)
-}
-
-// marshalJSON is a debug helper.
-func marshalJSON(v any) string {
-	b, _ := json.MarshalIndent(v, "", "  ")
-	return string(b)
 }
 
 // --- Approval commands ---
