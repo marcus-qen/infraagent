@@ -2,7 +2,9 @@ name: Lint
 
 on:
   push:
+    branches: [main]
   pull_request:
+    branches: [main]
 
 jobs:
   lint:
@@ -11,13 +13,16 @@ jobs:
     steps:
       - name: Clone the code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
 
-      - name: Run linter
-        uses: golangci/golangci-lint-action@v8
-        with:
-          version: v2.8.0
+      - name: Build custom linter
+        run: make golangci-lint
+
+      - name: Run linter on changed code
+        run: ./bin/golangci-lint run --new-from-merge-base=origin/main
