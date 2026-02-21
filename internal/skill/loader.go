@@ -13,12 +13,15 @@ package skill
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
+
+	"github.com/marcus-qen/legator/internal/skills"
 )
 
 // Loader loads skills from various sources.
@@ -47,7 +50,8 @@ func (l *Loader) SetCache(cache *Cache) {
 // Source formats:
 //   - "bundled" — load from bundled skills (embedded in controller)
 //   - "configmap://name" or "configmap://name/key" — load from ConfigMap
-//   - "git://github.com/org/repo#path@ref" — load from Git (stub for Phase 7)
+//   - "git://github.com/org/repo#path@ref" — load from Git
+//   - "oci://registry/repo:tag" — load from OCI registry via ORAS
 func (l *Loader) Load(ctx context.Context, name, source string) (*Skill, error) {
 	switch {
 	case source == "bundled":
@@ -56,7 +60,13 @@ func (l *Loader) Load(ctx context.Context, name, source string) (*Skill, error) 
 		return l.loadFromConfigMap(ctx, name, source)
 	case strings.HasPrefix(source, "git://"):
 		return l.loadFromGit(ctx, name, source)
+	case strings.HasPrefix(source, "oci://"):
+		return l.loadFromOCI(ctx, name, source)
 	default:
+		// Also handle bare registry refs (host/repo:tag without oci:// prefix)
+		if strings.Contains(source, "/") && (strings.Contains(source, ":") || strings.Contains(source, "@")) {
+			return l.loadFromOCI(ctx, name, "oci://"+source)
+		}
 		// Try as ConfigMap name for backwards compat
 		return l.loadFromConfigMap(ctx, name, "configmap://"+source)
 	}
@@ -113,6 +123,100 @@ func (l *Loader) loadFromConfigMap(ctx context.Context, name, source string) (*S
 			return nil, fmt.Errorf("failed to parse actions.yaml from ConfigMap %q: %w", cmName, err)
 		}
 		skill.Actions = sheet
+	}
+
+	return skill, nil
+}
+
+// loadFromOCI loads a skill from an OCI registry via ORAS.
+// Source format: "oci://registry/repo:tag" or "oci://registry/repo@sha256:..."
+func (l *Loader) loadFromOCI(ctx context.Context, name, source string) (*Skill, error) {
+	refStr := strings.TrimPrefix(source, "oci://")
+
+	ociRef, err := skills.ParseOCIRef(refStr)
+	if err != nil {
+		return nil, fmt.Errorf("invalid OCI reference %q: %w", refStr, err)
+	}
+
+	// Check cache first
+	if l.cache != nil {
+		if cached, ok := l.cache.Get(source); ok {
+			return cached, nil
+		}
+	}
+
+	// Build ORAS client with optional auth from env
+	rc := skills.NewRegistryClient()
+	if u := os.Getenv("LEGATOR_REGISTRY_USERNAME"); u != "" {
+		rc.WithAuth(u, os.Getenv("LEGATOR_REGISTRY_PASSWORD"))
+	}
+
+	// Pull the skill content
+	content, _, err := rc.Pull(ctx, ociRef)
+	if err != nil {
+		return nil, fmt.Errorf("pull OCI skill %q: %w", refStr, err)
+	}
+
+	// The content is the raw SKILL.md (pulled as tar.gz, extracted by PullToDir,
+	// but Pull returns the raw content layer — we need to extract SKILL.md).
+	// For now, use PullToDir to a temp dir then parse.
+	tmpDir, err := os.MkdirTemp("", "legator-skill-*")
+	if err != nil {
+		return nil, fmt.Errorf("create temp dir: %w", err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	// If content looks like SKILL.md directly (starts with ---), parse it
+	contentStr := string(content)
+	if strings.HasPrefix(strings.TrimSpace(contentStr), "---") || strings.HasPrefix(strings.TrimSpace(contentStr), "name:") {
+		skill, err := Parse(contentStr)
+		if err != nil {
+			return nil, fmt.Errorf("parse OCI skill %q: %w", refStr, err)
+		}
+		if skill.Name == "" {
+			skill.Name = name
+		}
+
+		// Cache the result
+		if l.cache != nil {
+			l.cache.Put(source, skill)
+		}
+		return skill, nil
+	}
+
+	// Otherwise try PullToDir (tar.gz content)
+	_, err = rc.PullToDir(ctx, ociRef, tmpDir)
+	if err != nil {
+		return nil, fmt.Errorf("pull OCI skill to dir %q: %w", refStr, err)
+	}
+
+	// Read SKILL.md from extracted directory
+	mdPath := tmpDir + "/SKILL.md"
+	mdBytes, err := os.ReadFile(mdPath)
+	if err != nil {
+		return nil, fmt.Errorf("read SKILL.md from OCI artifact %q: %w", refStr, err)
+	}
+
+	skill, err := Parse(string(mdBytes))
+	if err != nil {
+		return nil, fmt.Errorf("parse OCI skill %q: %w", refStr, err)
+	}
+	if skill.Name == "" {
+		skill.Name = name
+	}
+
+	// Load actions.yaml if present
+	actionsPath := tmpDir + "/actions.yaml"
+	if actionsBytes, err := os.ReadFile(actionsPath); err == nil {
+		sheet, err := ParseActionSheet(string(actionsBytes))
+		if err == nil {
+			skill.Actions = sheet
+		}
+	}
+
+	// Cache the result
+	if l.cache != nil {
+		l.cache.Put(source, skill)
 	}
 
 	return skill, nil
