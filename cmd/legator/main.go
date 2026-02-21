@@ -84,6 +84,8 @@ func main() {
 		handleRunAgent(os.Args[2:])
 	case "check":
 		handleCheck(os.Args[2:])
+	case "login":
+		handleLogin(os.Args[2:])
 	case "inventory", "inv":
 		handleInventory(os.Args[2:])
 	case "approvals", "approval":
@@ -138,6 +140,10 @@ Usage:
     --task "description"            Task description
     --wait                          Wait for completion
   legator check <target>            Quick health check (via watchman-light)
+  legator login [options]           OIDC device-code login for API access
+    --issuer <url>                  OIDC issuer (default: env or dev-lab Keycloak)
+    --client-id <id>                OIDC client ID (default: legator-cli)
+    --api-url <url>                 Legator API URL to store with token
   legator inventory                 List managed endpoints
   legator inventory show <name>     Show endpoint details
   legator runs list [--agent X]     List recent runs
