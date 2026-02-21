@@ -29,8 +29,8 @@ Thumbs.db
 # Coverage
 cover.out
 coverage.html
-main
-dashboard
-legator-controller
-legator-cli
-legator
+/main
+/dashboard
+/legator-controller
+/legator-cli
+/legator
