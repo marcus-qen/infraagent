@@ -25,13 +25,13 @@ resources:
 - modeltierconfig_admin_role.yaml
 - modeltierconfig_editor_role.yaml
 - modeltierconfig_viewer_role.yaml
-- agentrun_admin_role.yaml
-- agentrun_editor_role.yaml
-- agentrun_viewer_role.yaml
-- agentenvironment_admin_role.yaml
-- agentenvironment_editor_role.yaml
-- agentenvironment_viewer_role.yaml
-- legator_admin_role.yaml
-- legator_editor_role.yaml
-- legator_viewer_role.yaml
+- legatorrun_admin_role.yaml
+- legatorrun_editor_role.yaml
+- legatorrun_viewer_role.yaml
+- legatorenvironment_admin_role.yaml
+- legatorenvironment_editor_role.yaml
+- legatorenvironment_viewer_role.yaml
+- legatoragent_admin_role.yaml
+- legatoragent_editor_role.yaml
+- legatoragent_viewer_role.yaml
 
