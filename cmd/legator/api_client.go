@@ -101,7 +101,7 @@ func (c *legatorAPIClient) doJSON(method, path string, body any, out any) error 
 	if err != nil {
 		return fmt.Errorf("api request failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	respBody, _ := io.ReadAll(io.LimitReader(resp.Body, 256*1024))
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
@@ -174,7 +174,10 @@ func refreshCachedToken(tok *tokenCache) error {
 	return nil
 }
 
-func requestRefreshToken(ctx context.Context, tokenEndpoint, clientID, clientSecret, refreshToken string) (*tokenResponse, error) {
+func requestRefreshToken(
+	ctx context.Context,
+	tokenEndpoint, clientID, clientSecret, refreshToken string,
+) (*tokenResponse, error) {
 	form := url.Values{}
 	form.Set("grant_type", "refresh_token")
 	form.Set("client_id", clientID)
@@ -193,7 +196,7 @@ func requestRefreshToken(ctx context.Context, tokenEndpoint, clientID, clientSec
 	if err != nil {
 		return nil, fmt.Errorf("token refresh request failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	body, err := io.ReadAll(io.LimitReader(resp.Body, 32*1024))
 	if err != nil {

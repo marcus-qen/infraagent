@@ -170,7 +170,7 @@ func fetchOIDCDiscovery(ctx context.Context, issuer string) (*oidcDiscovery, err
 	if err != nil {
 		return nil, fmt.Errorf("oidc discovery request failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(io.LimitReader(resp.Body, 512))
@@ -187,7 +187,10 @@ func fetchOIDCDiscovery(ctx context.Context, issuer string) (*oidcDiscovery, err
 	return &out, nil
 }
 
-func requestDeviceCode(ctx context.Context, endpoint, clientID, clientSecret, scope string) (*deviceAuthResponse, error) {
+func requestDeviceCode(
+	ctx context.Context,
+	endpoint, clientID, clientSecret, scope string,
+) (*deviceAuthResponse, error) {
 	form := url.Values{}
 	form.Set("client_id", clientID)
 	if scope != "" {
@@ -207,7 +210,7 @@ func requestDeviceCode(ctx context.Context, endpoint, clientID, clientSecret, sc
 	if err != nil {
 		return nil, fmt.Errorf("device authorization request failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		body, _ := io.ReadAll(io.LimitReader(resp.Body, 512))
@@ -273,7 +276,10 @@ func pollDeviceToken(tokenEndpoint, clientID, clientSecret string, device *devic
 	}
 }
 
-func requestDeviceTokenOnce(ctx context.Context, tokenEndpoint, clientID, clientSecret, deviceCode string) (*tokenResponse, error) {
+func requestDeviceTokenOnce(
+	ctx context.Context,
+	tokenEndpoint, clientID, clientSecret, deviceCode string,
+) (*tokenResponse, error) {
 	form := url.Values{}
 	form.Set("grant_type", "urn:ietf:params:oauth:grant-type:device_code")
 	form.Set("client_id", clientID)
@@ -292,7 +298,7 @@ func requestDeviceTokenOnce(ctx context.Context, tokenEndpoint, clientID, client
 	if err != nil {
 		return nil, fmt.Errorf("token request failed: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	body, err := io.ReadAll(io.LimitReader(resp.Body, 32*1024))
 	if err != nil {

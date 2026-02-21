@@ -68,6 +68,12 @@ var (
 	}
 )
 
+const (
+	approvalPhasePending  = "Pending"
+	approvalPhaseApproved = "Approved"
+	approvalPhaseDenied   = "Denied"
+)
+
 func main() {
 	if len(os.Args) < 2 {
 		printUsage()
@@ -100,7 +106,7 @@ func main() {
 		if len(os.Args) > 3 {
 			reason = strings.Join(os.Args[3:], " ")
 		}
-		handleApprovalDecision(os.Args[2], "Approved", reason)
+		handleApprovalDecision(os.Args[2], approvalPhaseApproved, reason)
 	case "deny":
 		if len(os.Args) < 3 {
 			fmt.Fprintln(os.Stderr, "Usage: legator deny <name> [reason]")
@@ -110,7 +116,7 @@ func main() {
 		if len(os.Args) > 3 {
 			reason = strings.Join(os.Args[3:], " ")
 		}
-		handleApprovalDecision(os.Args[2], "Denied", reason)
+		handleApprovalDecision(os.Args[2], approvalPhaseDenied, reason)
 	case "skill", "skills":
 		handleSkill(os.Args[2:])
 	case "init":
@@ -244,7 +250,7 @@ func agentsList(args []string) {
 	fatal(err)
 
 	w := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
-	fmt.Fprintln(w, "NAME\tPHASE\tAUTONOMY\tSCHEDULE\tRUNS\tLAST RUN")
+	_, _ = fmt.Fprintln(w, "NAME\tPHASE\tAUTONOMY\tSCHEDULE\tRUNS\tLAST RUN")
 
 	for _, item := range list.Items {
 		name := item.GetName()
@@ -255,10 +261,10 @@ func agentsList(args []string) {
 		lastRun := getNestedString(item, "status", "lastRunTime")
 		lastRunAgo := formatTimeAgo(lastRun)
 
-		fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%d\t%s\n",
+		_, _ = fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%d\t%s\n",
 			name, phase, autonomy, schedule, runs, lastRunAgo)
 	}
-	w.Flush()
+	_ = w.Flush()
 }
 
 func agentsGet(name string, args []string) {
@@ -316,9 +322,9 @@ func agentsListViaAPI(apiClient *legatorAPIClient) {
 	}
 
 	w := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
-	fmt.Fprintln(w, "NAME\tPHASE\tAUTONOMY\tSCHEDULE\tRUNS\tLAST RUN")
+	_, _ = fmt.Fprintln(w, "NAME\tPHASE\tAUTONOMY\tSCHEDULE\tRUNS\tLAST RUN")
 	for _, a := range resp.Agents {
-		fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s\n",
+		_, _ = fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s\n",
 			asString(a["name"]),
 			asString(a["phase"]),
 			asString(a["autonomy"]),
@@ -327,7 +333,7 @@ func agentsListViaAPI(apiClient *legatorAPIClient) {
 			"-",
 		)
 	}
-	w.Flush()
+	_ = w.Flush()
 }
 
 func agentsGetViaAPI(apiClient *legatorAPIClient, name string) {
@@ -422,7 +428,7 @@ func runsList(args []string) {
 	})
 
 	w := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
-	fmt.Fprintln(w, "NAME\tAGENT\tPHASE\tTRIGGER\tTOKENS\tDURATION\tAGE")
+	_, _ = fmt.Fprintln(w, "NAME\tAGENT\tPHASE\tTRIGGER\tTOKENS\tDURATION\tAGE")
 
 	count := 0
 	for _, item := range list.Items {
@@ -454,7 +460,7 @@ func runsList(args []string) {
 			phaseIcon = "🔄"
 		}
 
-		fmt.Fprintf(w, "%s\t%s\t%s %s\t%s\t%d\t%s\t%s\n",
+		_, _ = fmt.Fprintf(w, "%s\t%s\t%s %s\t%s\t%d\t%s\t%s\n",
 			name, agent, phaseIcon, phase, trigger, tokens, duration, age)
 
 		count++
@@ -462,7 +468,7 @@ func runsList(args []string) {
 			break
 		}
 	}
-	w.Flush()
+	_ = w.Flush()
 
 	if count == 0 && agentFilter != "" {
 		fmt.Printf("\nNo runs found for agent %q\n", agentFilter)
@@ -522,7 +528,7 @@ func runsLogs(name string, args []string) {
 	if found && len(actions) > 0 {
 		fmt.Printf("\nActions (%d):\n", len(actions))
 		for i, a := range actions {
-			am, ok := a.(map[string]interface{})
+			am, ok := a.(map[string]any)
 			if !ok {
 				continue
 			}
@@ -558,7 +564,7 @@ func runsLogs(name string, args []string) {
 		conditions, found, _ := unstructured.NestedSlice(run.Object, "status", "conditions")
 		if found {
 			for _, c := range conditions {
-				cm, ok := c.(map[string]interface{})
+				cm, ok := c.(map[string]any)
 				if !ok {
 					continue
 				}
@@ -592,7 +598,7 @@ func runsListViaAPI(apiClient *legatorAPIClient, args []string) {
 	}
 
 	w := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
-	fmt.Fprintln(w, "NAME\tAGENT\tPHASE\tTRIGGER\tTOKENS\tDURATION\tAGE")
+	_, _ = fmt.Fprintln(w, "NAME\tAGENT\tPHASE\tTRIGGER\tTOKENS\tDURATION\tAGE")
 
 	count := 0
 	for _, run := range resp.Runs {
@@ -609,7 +615,7 @@ func runsListViaAPI(apiClient *legatorAPIClient, args []string) {
 
 		age := formatTimeAgo(asString(run["createdAt"]))
 		duration := asString(run["duration"])
-		fmt.Fprintf(w, "%s\t%s\t%s %s\t%s\t%s\t%s\t%s\n",
+		_, _ = fmt.Fprintf(w, "%s\t%s\t%s %s\t%s\t%s\t%s\t%s\n",
 			asString(run["name"]),
 			asString(run["agent"]),
 			phaseIcon,
@@ -624,7 +630,7 @@ func runsListViaAPI(apiClient *legatorAPIClient, args []string) {
 			break
 		}
 	}
-	w.Flush()
+	_ = w.Flush()
 
 	if count == 0 && agentFilter != "" {
 		fmt.Printf("\nNo runs found for agent %q\n", agentFilter)
@@ -676,11 +682,12 @@ func runsLogsViaAPI(apiClient *legatorAPIClient, name string) {
 			target, _ := am["target"].(string)
 
 			statusIcon := "✅"
-			if status == "blocked" {
+			switch status {
+			case "blocked":
 				statusIcon = "🚫"
-			} else if status == "skipped" {
+			case "skipped":
 				statusIcon = "⏭️"
-			} else if status == "error" {
+			case "error":
 				statusIcon = "⚠️"
 			}
 
@@ -942,7 +949,7 @@ func formatTokens(tokens int64) string {
 }
 
 // marshalJSON is a debug helper.
-func marshalJSON(v interface{}) string {
+func marshalJSON(v any) string {
 	b, _ := json.MarshalIndent(v, "", "  ")
 	return string(b)
 }
@@ -1013,22 +1020,22 @@ func handleApprovalsViaAPI(apiClient *legatorAPIClient, args []string) {
 		aj := unstructured.Unstructured{Object: resp.Approvals[j]}
 		pi := getNestedString(ai, "status", "phase")
 		pj := getNestedString(aj, "status", "phase")
-		if pi == "Pending" && pj != "Pending" {
+		if pi == approvalPhasePending && pj != approvalPhasePending {
 			return true
 		}
-		if pi != "Pending" && pj == "Pending" {
+		if pi != approvalPhasePending && pj == approvalPhasePending {
 			return false
 		}
 		return ai.GetCreationTimestamp().After(aj.GetCreationTimestamp().Time)
 	})
 
 	w := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
-	fmt.Fprintln(w, "STATUS\tNAME\tAGENT\tTOOL\tTIER\tAGE")
+	_, _ = fmt.Fprintln(w, "STATUS\tNAME\tAGENT\tTOOL\tTIER\tAGE")
 	for _, obj := range resp.Approvals {
 		item := unstructured.Unstructured{Object: obj}
 		phase := getNestedString(item, "status", "phase")
 		if phase == "" {
-			phase = "Pending"
+			phase = approvalPhasePending
 		}
 		agent := getNestedString(item, "spec", "agentName")
 		tool := getNestedString(item, "spec", "action", "tool")
@@ -1037,18 +1044,18 @@ func handleApprovalsViaAPI(apiClient *legatorAPIClient, args []string) {
 
 		icon := "❓"
 		switch phase {
-		case "Pending":
+		case approvalPhasePending:
 			icon = "⏳"
-		case "Approved":
+		case approvalPhaseApproved:
 			icon = "✅"
-		case "Denied":
+		case approvalPhaseDenied:
 			icon = "❌"
 		case "Expired":
 			icon = "⏰"
 		}
-		fmt.Fprintf(w, "%s %s\t%s\t%s\t%s\t%s\t%s\n", icon, phase, item.GetName(), agent, tool, tier, age)
+		_, _ = fmt.Fprintf(w, "%s %s\t%s\t%s\t%s\t%s\t%s\n", icon, phase, item.GetName(), agent, tool, tier, age)
 	}
-	w.Flush()
+	_ = w.Flush()
 }
 
 func listApprovals(client dynamic.Interface, namespace string) {
@@ -1075,10 +1082,10 @@ func listApprovals(client dynamic.Interface, namespace string) {
 	sort.Slice(list.Items, func(i, j int) bool {
 		pi := getNestedString(list.Items[i], "status", "phase")
 		pj := getNestedString(list.Items[j], "status", "phase")
-		if pi == "Pending" && pj != "Pending" {
+		if pi == approvalPhasePending && pj != approvalPhasePending {
 			return true
 		}
-		if pi != "Pending" && pj == "Pending" {
+		if pi != approvalPhasePending && pj == approvalPhasePending {
 			return false
 		}
 		ti := list.Items[i].GetCreationTimestamp()
@@ -1087,12 +1094,12 @@ func listApprovals(client dynamic.Interface, namespace string) {
 	})
 
 	w := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
-	fmt.Fprintln(w, "STATUS\tNAME\tAGENT\tTOOL\tTIER\tAGE")
+	_, _ = fmt.Fprintln(w, "STATUS\tNAME\tAGENT\tTOOL\tTIER\tAGE")
 
 	for _, item := range list.Items {
 		phase := getNestedString(item, "status", "phase")
 		if phase == "" {
-			phase = "Pending"
+			phase = approvalPhasePending
 		}
 		agent := getNestedString(item, "spec", "agentName")
 		tool := getNestedString(item, "spec", "action", "tool")
@@ -1101,24 +1108,24 @@ func listApprovals(client dynamic.Interface, namespace string) {
 
 		icon := "❓"
 		switch phase {
-		case "Pending":
+		case approvalPhasePending:
 			icon = "⏳"
-		case "Approved":
+		case approvalPhaseApproved:
 			icon = "✅"
-		case "Denied":
+		case approvalPhaseDenied:
 			icon = "❌"
 		case "Expired":
 			icon = "⏰"
 		}
 
-		fmt.Fprintf(w, "%s %s\t%s\t%s\t%s\t%s\t%s\n", icon, phase, item.GetName(), agent, tool, tier, age)
+		_, _ = fmt.Fprintf(w, "%s %s\t%s\t%s\t%s\t%s\t%s\n", icon, phase, item.GetName(), agent, tool, tier, age)
 	}
-	w.Flush()
+	_ = w.Flush()
 }
 
 func handleApprovalDecisionViaAPI(apiClient *legatorAPIClient, name, decision, reason string) {
 	apiDecision := "approve"
-	if strings.EqualFold(decision, "Denied") {
+	if strings.EqualFold(decision, approvalPhaseDenied) {
 		apiDecision = "deny"
 	}
 
@@ -1131,10 +1138,10 @@ func handleApprovalDecisionViaAPI(apiClient *legatorAPIClient, name, decision, r
 	}
 
 	icon := "✅"
-	pretty := "Approved"
+	pretty := approvalPhaseApproved
 	if apiDecision == "deny" {
 		icon = "❌"
-		pretty = "Denied"
+		pretty = approvalPhaseDenied
 	}
 	fmt.Printf("%s %s: %s", icon, pretty, name)
 	if reason != "" {
@@ -1188,13 +1195,13 @@ func handleApprovalDecision(name, decision, reason string) {
 
 	// Check it's still pending
 	currentPhase := getNestedString(*ar, "status", "phase")
-	if currentPhase != "" && currentPhase != "Pending" {
+	if currentPhase != "" && currentPhase != approvalPhasePending {
 		fmt.Fprintf(os.Stderr, "ApprovalRequest %q is already %s\n", name, currentPhase)
 		os.Exit(1)
 	}
 
 	// Update status
-	status := map[string]interface{}{
+	status := map[string]any{
 		"phase":     decision,
 		"decidedBy": "legator-cli",
 		"decidedAt": time.Now().UTC().Format(time.RFC3339),
@@ -1212,7 +1219,7 @@ func handleApprovalDecision(name, decision, reason string) {
 	}
 
 	icon := "✅"
-	if decision == "Denied" {
+	if decision == approvalPhaseDenied {
 		icon = "❌"
 	}
 

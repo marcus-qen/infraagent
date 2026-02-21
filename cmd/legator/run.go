@@ -185,7 +185,7 @@ func handleRunAgentViaAPI(apiClient *legatorAPIClient, agentName, target, task s
 	triggerTime := time.Now().UTC()
 	var seenRun string
 
-	for i := 0; i < 60; i++ {
+	for range 60 {
 		time.Sleep(5 * time.Second)
 
 		var runsResp struct {
@@ -218,7 +218,8 @@ func handleRunAgentViaAPI(apiClient *legatorAPIClient, agentName, target, task s
 						Report string `json:"report"`
 					} `json:"status"`
 				}
-				if err := apiClient.getJSON("/api/v1/runs/"+url.PathEscape(run.Name), &detail); err == nil && detail.Status.Report != "" {
+				err := apiClient.getJSON("/api/v1/runs/"+url.PathEscape(run.Name), &detail)
+				if err == nil && detail.Status.Report != "" {
 					fmt.Printf("\n--- Report ---\n%s\n", detail.Status.Report)
 				}
 				return
@@ -229,7 +230,8 @@ func handleRunAgentViaAPI(apiClient *legatorAPIClient, agentName, target, task s
 						Report string `json:"report"`
 					} `json:"status"`
 				}
-				if err := apiClient.getJSON("/api/v1/runs/"+url.PathEscape(run.Name), &detail); err == nil && detail.Status.Report != "" {
+				err := apiClient.getJSON("/api/v1/runs/"+url.PathEscape(run.Name), &detail)
+				if err == nil && detail.Status.Report != "" {
 					fmt.Printf("\n--- Report ---\n%s\n", detail.Status.Report)
 				}
 				os.Exit(1)
