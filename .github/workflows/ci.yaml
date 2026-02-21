@@ -15,13 +15,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
 
-      - name: Run linter
-        run: make lint
+      - name: Build custom linter
+        run: make golangci-lint
+
+      - name: Run linter on changed code
+        run: ./bin/golangci-lint run --new-from-merge-base=origin/main
 
   test:
     name: Test
