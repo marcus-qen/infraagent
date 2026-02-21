@@ -15,9 +15,9 @@ import (
 )
 
 type oidcDiscovery struct {
-	Issuer                string `json:"issuer"`
-	TokenEndpoint         string `json:"token_endpoint"`
-	DeviceAuthEndpoint    string `json:"device_authorization_endpoint"`
+	Issuer             string `json:"issuer"`
+	TokenEndpoint      string `json:"token_endpoint"`
+	DeviceAuthEndpoint string `json:"device_authorization_endpoint"`
 }
 
 type deviceAuthResponse struct {

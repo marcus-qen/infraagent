@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -38,6 +39,13 @@ func handleRunAgent(args []string) {
 		case "--wait", "-w":
 			wait = true
 		}
+	}
+
+	if apiClient, ok, err := tryAPIClient(); err != nil {
+		fatal(err)
+	} else if ok {
+		handleRunAgentViaAPI(apiClient, agentName, target, task, wait)
+		return
 	}
 
 	dc, defaultNS, err := getClient()
@@ -145,6 +153,100 @@ func handleRunAgent(args []string) {
 	os.Exit(1)
 }
 
+func handleRunAgentViaAPI(apiClient *legatorAPIClient, agentName, target, task string, wait bool) {
+	payload := map[string]string{}
+	if task != "" {
+		payload["task"] = task
+	}
+	if target != "" {
+		payload["target"] = target
+	}
+
+	var resp map[string]any
+	path := "/api/v1/agents/" + url.PathEscape(agentName) + "/run"
+	if err := apiClient.postJSON(path, payload, &resp); err != nil {
+		fatal(err)
+	}
+
+	fmt.Printf("🚀 Triggered %s via API\n", agentName)
+	if task != "" {
+		fmt.Printf("   Task: %s\n", task)
+	}
+	if target != "" {
+		fmt.Printf("   Target: %s\n", target)
+	}
+
+	if !wait {
+		fmt.Println("\nRun started. Use 'legator runs list --agent", agentName+"' to check progress.")
+		return
+	}
+
+	fmt.Println("\nWaiting for run to complete...")
+	triggerTime := time.Now().UTC()
+	var seenRun string
+
+	for i := 0; i < 60; i++ {
+		time.Sleep(5 * time.Second)
+
+		var runsResp struct {
+			Runs []struct {
+				Name      string `json:"name"`
+				Agent     string `json:"agent"`
+				Phase     string `json:"phase"`
+				CreatedAt string `json:"createdAt"`
+			} `json:"runs"`
+		}
+		if err := apiClient.getJSON("/api/v1/runs?agent="+url.QueryEscape(agentName), &runsResp); err != nil {
+			continue
+		}
+
+		for _, run := range runsResp.Runs {
+			createdAt, err := time.Parse(time.RFC3339, run.CreatedAt)
+			if err != nil {
+				continue
+			}
+			if createdAt.Before(triggerTime.Add(-2 * time.Second)) {
+				continue
+			}
+
+			seenRun = run.Name
+			switch run.Phase {
+			case "Succeeded":
+				fmt.Printf("\n✅ %s completed successfully\n", run.Name)
+				var detail struct {
+					Status struct {
+						Report string `json:"report"`
+					} `json:"status"`
+				}
+				if err := apiClient.getJSON("/api/v1/runs/"+url.PathEscape(run.Name), &detail); err == nil && detail.Status.Report != "" {
+					fmt.Printf("\n--- Report ---\n%s\n", detail.Status.Report)
+				}
+				return
+			case "Failed":
+				fmt.Printf("\n❌ %s failed\n", run.Name)
+				var detail struct {
+					Status struct {
+						Report string `json:"report"`
+					} `json:"status"`
+				}
+				if err := apiClient.getJSON("/api/v1/runs/"+url.PathEscape(run.Name), &detail); err == nil && detail.Status.Report != "" {
+					fmt.Printf("\n--- Report ---\n%s\n", detail.Status.Report)
+				}
+				os.Exit(1)
+			default:
+				fmt.Printf("  [%s] %s...\r", formatDuration(time.Since(triggerTime)), run.Phase)
+			}
+		}
+	}
+
+	if seenRun != "" {
+		fmt.Printf("\n⏰ Timed out waiting. Last seen: %s\n", seenRun)
+	} else {
+		fmt.Println("\n⏰ Timed out. Run may not have started yet.")
+	}
+	os.Exit(1)
+}
+
 // handleCheck handles "legator check <target>" — quick health probe
 func handleCheck(args []string) {
 	if len(args) == 0 {
@@ -161,6 +263,13 @@ func handleCheck(args []string) {
 
 // handleInventory handles "legator inventory [list|show <name>]"
 func handleInventory(args []string) {
+	if apiClient, ok, err := tryAPIClient(); err != nil {
+		fatal(err)
+	} else if ok {
+		handleInventoryViaAPI(apiClient, args)
+		return
+	}
+
 	dc, defaultNS, err := getClient()
 	fatal(err)
 
@@ -198,7 +307,7 @@ func handleInventory(args []string) {
 		}
 
 		for name, ep := range endpoints {
-			epMap, ok := ep.(map[string]interface{})
+			epMap, ok := ep.(map[string]any)
 			if !ok {
 				continue
 			}
@@ -211,6 +320,71 @@ func handleInventory(args []string) {
 	fmt.Printf("\n%d endpoints across %d environments\n", total, len(envs.Items))
 }
 
+func handleInventoryViaAPI(apiClient *legatorAPIClient, args []string) {
+	var resp struct {
+		Devices []map[string]any `json:"devices"`
+		Total   int              `json:"total"`
+		Source  string           `json:"source"`
+	}
+	if err := apiClient.getJSON("/api/v1/inventory", &resp); err != nil {
+		fatal(err)
+	}
+
+	if len(args) > 0 && (args[0] == "show" || args[0] == "get") {
+		if len(args) < 2 {
+			fmt.Fprintln(os.Stderr, "Usage: legator inventory show <name>")
+			os.Exit(1)
+		}
+		target := args[1]
+		for _, d := range resp.Devices {
+			if asString(d["name"]) == target || asString(d["hostname"]) == target {
+				fmt.Printf("📍 %s\n", target)
+				fmt.Printf("  Source:      %s\n", resp.Source)
+				if resp.Source == "inventory-provider" {
+					addr := asMap(d["addresses"])
+					conn := asMap(d["connectivity"])
+					fmt.Printf("  Hostname:    %s\n", asString(d["hostname"]))
+					fmt.Printf("  Headscale:   %s\n", asString(addr["headscale"]))
+					fmt.Printf("  Online:      %t\n", asBool(conn["online"]))
+					fmt.Printf("  Type:        %s\n", asString(d["type"]))
+				} else {
+					fmt.Printf("  URL:         %s\n", asString(d["url"]))
+					fmt.Printf("  Environment: %s\n", asString(d["environmentRef"]))
+				}
+				return
+			}
+		}
+		fmt.Fprintf(os.Stderr, "Endpoint %q not found\n", target)
+		os.Exit(1)
+	}
+
+	fmt.Println("📋 Infrastructure Inventory")
+	fmt.Println("───────────────────────────")
+	if resp.Source == "inventory-provider" {
+		for _, d := range resp.Devices {
+			name := asString(d["name"])
+			addr := asMap(d["addresses"])
+			conn := asMap(d["connectivity"])
+			ip := asString(addr["headscale"])
+			if ip == "" {
+				ip = asString(addr["internal"])
+			}
+			state := "offline"
+			if asBool(conn["online"]) {
+				state = "online"
+			}
+			fmt.Printf("  %-25s %s  (%s)\n", name, ip, state)
+		}
+		fmt.Printf("\n%d devices (source: %s)\n", resp.Total, resp.Source)
+		return
+	}
+
+	for _, d := range resp.Devices {
+		fmt.Printf("  %-25s %s  (env: %s)\n", asString(d["name"]), asString(d["url"]), asString(d["environmentRef"]))
+	}
+	fmt.Printf("\n%d endpoints (source: %s)\n", resp.Total, resp.Source)
+}
+
 func inventoryShow(envs *unstructured.UnstructuredList, target string) {
 	for _, env := range envs.Items {
 		endpoints, found, _ := unstructured.NestedMap(env.Object, "spec", "endpoints")
@@ -219,7 +393,7 @@ func inventoryShow(envs *unstructured.UnstructuredList, target string) {
 		}
 
 		if ep, ok := endpoints[target]; ok {
-			epMap, _ := ep.(map[string]interface{})
+			epMap, _ := ep.(map[string]any)
 			url, _ := epMap["url"].(string)
 
 			fmt.Printf("📍 %s\n", target)
