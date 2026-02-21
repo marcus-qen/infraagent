@@ -78,8 +78,14 @@ func main() {
 	switch cmd {
 	case "agents", "agent":
 		handleAgents(os.Args[2:])
-	case "runs", "run":
+	case "runs":
 		handleRuns(os.Args[2:])
+	case "run":
+		handleRunAgent(os.Args[2:])
+	case "check":
+		handleCheck(os.Args[2:])
+	case "inventory", "inv":
+		handleInventory(os.Args[2:])
 	case "approvals", "approval":
 		handleApprovals(os.Args[2:])
 	case "approve":
@@ -125,21 +131,28 @@ func printUsage() {
 	fmt.Println(`legator — Autonomous agent runtime for your IT estate
 
 Usage:
-  legator agents list             List all agents
-  legator agents get <name>       Show agent details
-  legator runs list [--agent X]   List recent runs
-  legator runs logs <name>        Show run report/audit trail
-  legator approvals               List pending approvals
-  legator approve <name> [reason] Approve an action
-  legator deny <name> [reason]    Deny an action
-  legator skill pack <dir>        Package a skill directory
-  legator skill push <dir> <ref>  Push skill to OCI registry
-  legator skill pull <ref> [dir]  Pull skill from OCI registry
-  legator skill inspect <dir>     Show skill manifest
-  legator init [directory]        Create a new agent (interactive wizard)
-  legator validate <directory>    Validate an agent directory
-  legator status                  Cluster-wide summary
-  legator version                 Show version info
+  legator agents list               List all agents
+  legator agents get <name>         Show agent details
+  legator run <agent> [options]     Trigger an ad-hoc agent run
+    --target <device>               Target device
+    --task "description"            Task description
+    --wait                          Wait for completion
+  legator check <target>            Quick health check (via watchman-light)
+  legator inventory                 List managed endpoints
+  legator inventory show <name>     Show endpoint details
+  legator runs list [--agent X]     List recent runs
+  legator runs logs <name>          Show run report/audit trail
+  legator approvals                 List pending approvals
+  legator approve <name> [reason]   Approve an action
+  legator deny <name> [reason]      Deny an action
+  legator skill pack <dir>          Package a skill directory
+  legator skill push <dir> <ref>    Push skill to OCI registry
+  legator skill pull <ref> [dir]    Pull skill from OCI registry
+  legator skill inspect <dir>       Show skill manifest
+  legator init [directory]          Create a new agent (interactive wizard)
+  legator validate <directory>      Validate an agent directory
+  legator status                    Cluster-wide summary
+  legator version                   Show version info
 
 Flags:
   -n, --namespace <ns>    Kubernetes namespace (default: all)
